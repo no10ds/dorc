@@ -2,9 +2,11 @@
 name = "pipelines"
 version = "0.1.0"
 description = ""
-authors = ["Toby Drane"]
+authors = [
+    { name="Toby Drane" }
+]
 readme = "README.md"
-dependices = [
+dependencies = [
     "pulumi",
     "pulumi-aws"
 ]
