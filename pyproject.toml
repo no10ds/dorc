@@ -1,0 +1,10 @@
+[project]
+name = "pipelines"
+version = "0.1.0"
+description = ""
+authors = ["Toby Drane"]
+readme = "README.md"
+dependices = [
+    "pulumi",
+    "pulumi-aws"
+]
