@@ -13,9 +13,6 @@ class CreatePipelineLambda():
         top_dir = os.path.dirname(__file__)
         src_dir = os.path.abspath(os.path.join(top_dir, 'src'))
 
-        print(os.getcwd())
-        print(src_dir)
-
     def apply(self, lambda_role):
         return aws.lambda_.Function(
             resource_name=self.lambda_name,
