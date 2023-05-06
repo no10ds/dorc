@@ -1,5 +1,4 @@
-name: pipelines
+name: Pipelines
 runtime:
   name: python
-config:
-  parent: parent
+config: .pulumi

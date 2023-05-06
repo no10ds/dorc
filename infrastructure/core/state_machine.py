@@ -1,0 +1,54 @@
+import json
+import pulumi
+import pulumi_aws as aws
+
+from typing import Dict, List
+
+# TODO: Probably want this to extend a abstract pipeline create class?
+class CreatePipelineStateMachine():
+
+    def __init__(self, state_machine_name: str, lambdas_dict: Dict, config: Dict) -> None:
+        self.state_machine_name = state_machine_name
+        self.lambdas_dict = lambdas_dict
+        self.config = config
+
+        # TODO: We probably want to do some validation of the config agaisnt the lambdas dict
+        # they can't specify a key in the config that is not actually a deployed lambda
+
+    def apply(self, state_machine_role):
+        state_machine_definition = pulumi.Output.all([value.arn for value in self.lambdas_dict.values()]).apply(
+            lambda arns: self.create_state_machine_definition(arns)
+        )
+
+        aws.sfn.StateMachine(
+            resource_name=self.state_machine_name,
+            role_arn=state_machine_role,
+            definition=state_machine_definition
+        )
+
+    def create_state_machine_definition(self, arns: List):
+        lambda_names = self.lambdas_dict.keys()
+        name_to_arn_map = dict(zip(lambda_names, arns[0]))
+        states_map = {}
+
+        for config_item in self.config:
+            lambda_name = config_item["lambda_name"]
+            next_item = config_item["next"]
+
+            states_map[lambda_name] = {
+                "Type": "Task",
+                "Resource": name_to_arn_map[lambda_name]
+            }
+
+            # They have not specified a next so we can assume this is the termination state
+            if next_item is None:
+                states_map[lambda_name]["End"] = True
+            else:
+                states_map[lambda_name]["Next"] = next_item
+
+        # TODO: Define this comment in the wider configuration passed into class
+        return f"""{{
+            "Comment": "Example state machine function",
+            "StartAt": "{self.config[0]["lambda_name"]}",
+            "States": {json.dumps(states_map)}
+        }}"""
