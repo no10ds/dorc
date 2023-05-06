@@ -2,19 +2,25 @@ import os
 import pulumi
 
 from typing import Dict
+from pydantic import ValidationError
 
 from infrastructure.core.lambdas import CreatePipelineLambda
 from infrastructure.core.state_machine import CreatePipelineStateMachine
+from infrastructure.core.config_model import Config
 
 class CreatePipeline():
 
     def __init__(self, file_path: str, pipeline_name: str, config: Dict) -> None:
-        # TODO: We want to pass in the pipeline configuration setting and perform validation
-        # on this
         # TODO: Probably want to perform some validation on these variables?
         self.file_path = file_path
         self.pipeline_name = pipeline_name
-        self.config = config
+
+        try:
+            self.config = Config.parse_obj(config)
+        except ValidationError as e:
+            # TODO: Probably want a custom error here
+            raise Exception(str(e))
+        
         # TODO: Probably want this stack reference name as a config variable in the future
         self.universal_stack_reference = pulumi.StackReference("universal")
 

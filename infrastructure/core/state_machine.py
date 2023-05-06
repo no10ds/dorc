@@ -2,12 +2,14 @@ import json
 import pulumi
 import pulumi_aws as aws
 
-from typing import Dict, List
+from typing import Dict
+
+from infrastructure.core.config_model import Config
 
 # TODO: Probably want this to extend a abstract pipeline create class?
 class CreatePipelineStateMachine():
 
-    def __init__(self, state_machine_name: str, lambdas_dict: Dict, config: Dict) -> None:
+    def __init__(self, state_machine_name: str, lambdas_dict: Dict, config: Config) -> None:
         self.state_machine_name = state_machine_name
         self.lambdas_dict = lambdas_dict
         self.config = config
@@ -26,29 +28,29 @@ class CreatePipelineStateMachine():
             definition=state_machine_definition
         )
 
-    def create_state_machine_definition(self, arns: List):
+    def create_state_machine_definition(self, arns: list):
         lambda_names = self.lambdas_dict.keys()
         name_to_arn_map = dict(zip(lambda_names, arns[0]))
         states_map = {}
 
-        for config_item in self.config:
-            lambda_name = config_item["lambda_name"]
-            next_item = config_item["next"]
+        for pipeline in self.config.pipelines:
+            function_name = pipeline.function_name
+            next_function = pipeline.next_function
 
-            states_map[lambda_name] = {
+            states_map[function_name] = {
                 "Type": "Task",
-                "Resource": name_to_arn_map[lambda_name]
+                "Resource": name_to_arn_map[function_name]
             }
 
             # They have not specified a next so we can assume this is the termination state
-            if next_item is None:
-                states_map[lambda_name]["End"] = True
+            if next_function is None:
+                states_map[function_name]["End"] = True
             else:
-                states_map[lambda_name]["Next"] = next_item
+                states_map[function_name]["Next"] = next_function
 
         # TODO: Define this comment in the wider configuration passed into class
         return f"""{{
             "Comment": "Example state machine function",
-            "StartAt": "{self.config[0]["lambda_name"]}",
+            "StartAt": "{self.config.pipelines[0].function_name}",
             "States": {json.dumps(states_map)}
         }}"""

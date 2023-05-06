@@ -12,7 +12,7 @@ python-setup:
 venv:
 	pyenv exec python -m venv .venv
 	. .venv/bin/activate && \
-	pip install .
+	pip install -r requirements.txt
 
 infra/init:
 	pulumi login $(INFRA_BUCKET)
