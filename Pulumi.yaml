@@ -1,0 +1,4 @@
+name: Pipelines
+runtime:
+  name: python
+config: .pulumi
