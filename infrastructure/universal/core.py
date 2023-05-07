@@ -89,3 +89,21 @@ def create_lambda_policy(lambda_role):
             }]
         }"""
     )
+
+def create_cloudevent_state_machine_trigger_role():
+    return aws.iam.Role(
+        "cloudevent_state_machine_trigger_role",
+        assume_role_policy="""{
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Action": "sts:AssumeRole",
+                    "Principal": {
+                        "Service": "events.amazonaws.com"
+                    },
+                    "Effect": "Allow",
+                    "Sid": ""
+                }
+            ]
+        }"""
+    )

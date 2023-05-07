@@ -21,7 +21,7 @@ class CreatePipelineStateMachine():
             lambda arns: self.create_state_machine_definition(arns)
         )
 
-        aws.sfn.StateMachine(
+        self.state_machine = aws.sfn.StateMachine(
             resource_name=self.config.pipeline_name,
             role_arn=state_machine_role,
             definition=state_machine_definition
@@ -53,3 +53,6 @@ class CreatePipelineStateMachine():
             "StartAt": "{self.config.pipelines[0].function_name}",
             "States": {json.dumps(states_map)}
         }}"""
+
+    def get_state_machine_arn(self):
+        return self.state_machine.arn
