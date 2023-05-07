@@ -1,16 +1,15 @@
 import pulumi_aws as aws
 
+
 def create_code_storage_bucket(bucket_name: str):
     aws.s3.Bucket(
-        "step-functions-code-storage-bucket",
-        bucket=bucket_name,
-        acl="private"
+        "step-functions-code-storage-bucket", bucket=bucket_name, acl="private"
     )
 
+
 def create_cloudwatch_log_group():
-    aws.cloudwatch.LogGroup(
-        "pipelines-log-group"
-    )
+    aws.cloudwatch.LogGroup("pipelines-log-group")
+
 
 def create_state_function_role():
     return aws.iam.Role(
@@ -26,8 +25,9 @@ def create_state_function_role():
                     "Action": "sts:AssumeRole"
                 }
             ]
-        }"""
+        }""",
     )
+
 
 def create_state_function_policy(state_function_role):
     return aws.iam.RolePolicy(
@@ -51,8 +51,9 @@ def create_state_function_policy(state_function_role):
                     "Resource": "*"
                 }
             ]
-        }"""
+        }""",
     )
+
 
 def create_lambda_role():
     return aws.iam.Role(
@@ -69,8 +70,9 @@ def create_lambda_role():
                     "Sid": ""
                 }
             ]
-        }"""
+        }""",
     )
+
 
 def create_lambda_policy(lambda_role):
     return aws.iam.RolePolicy(
@@ -87,8 +89,9 @@ def create_lambda_policy(lambda_role):
                 ],
                 "Resource": "arn:aws:logs:*:*:*"
             }]
-        }"""
+        }""",
     )
+
 
 def create_cloudevent_state_machine_trigger_role():
     return aws.iam.Role(
@@ -105,5 +108,5 @@ def create_cloudevent_state_machine_trigger_role():
                     "Sid": ""
                 }
             ]
-        }"""
+        }""",
     )

@@ -6,9 +6,9 @@ from typing import Dict
 
 from infrastructure.core.models.config import Config
 
-# TODO: Probably want this to extend a abstract pipeline create class?
-class CreatePipelineStateMachine():
 
+# TODO: Probably want this to extend a abstract pipeline create class?
+class CreatePipelineStateMachine:
     def __init__(self, lambdas_dict: Dict, config: Config) -> None:
         self.lambdas_dict = lambdas_dict
         self.config = config
@@ -17,14 +17,14 @@ class CreatePipelineStateMachine():
         # they can't specify a key in the config that is not actually a deployed lambda
 
     def apply(self, state_machine_role):
-        state_machine_definition = pulumi.Output.all([value.arn for value in self.lambdas_dict.values()]).apply(
-            lambda arns: self.create_state_machine_definition(arns)
-        )
+        state_machine_definition = pulumi.Output.all(
+            [value.arn for value in self.lambdas_dict.values()]
+        ).apply(lambda arns: self.create_state_machine_definition(arns))
 
         self.state_machine = aws.sfn.StateMachine(
             resource_name=self.config.pipeline_name,
             role_arn=state_machine_role,
-            definition=state_machine_definition
+            definition=state_machine_definition,
         )
 
     def create_state_machine_definition(self, arns: list):
@@ -38,7 +38,7 @@ class CreatePipelineStateMachine():
 
             states_map[function_name] = {
                 "Type": "Task",
-                "Resource": name_to_arn_map[function_name]
+                "Resource": name_to_arn_map[function_name],
             }
 
             # They have not specified a next so we can assume this is the termination state

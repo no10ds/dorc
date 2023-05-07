@@ -1,13 +1,16 @@
 from typing import Optional
 from pydantic import BaseModel, validator
 
+
 class CloudwatchTrigger(BaseModel):
     bucket_name: str
     key_prefix: str
 
+
 class Pipeline(BaseModel):
     function_name: str
     next_function: Optional[str] = None
+
 
 class Config(BaseModel):
     file_path: str
@@ -22,5 +25,7 @@ class Config(BaseModel):
             if pipeline.next_function is None:
                 nones_found += 1
             if nones_found > 1:
-                raise ValueError("Pipeline config can only contain one termination step")
+                raise ValueError(
+                    "Pipeline config can only contain one termination step"
+                )
         return value
