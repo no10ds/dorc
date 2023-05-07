@@ -6,7 +6,8 @@ from pydantic import ValidationError
 
 from infrastructure.core.lambdas import CreatePipelineLambda
 from infrastructure.core.state_machine import CreatePipelineStateMachine
-from infrastructure.core.config_model import Config
+from infrastructure.core.event_bridge import CreateEventBridge
+from infrastructure.core.models.config import Config
 
 class CreatePipeline():
 
@@ -33,6 +34,8 @@ class CreatePipeline():
     def apply(self):
         self.apply_lambdas()
         self.apply_state_machine()
+
+        # CreateEventBridge("test_event_bridge_name", "rapid-data-ingest-raw-data", "data/test/test_test").apply()
 
     def apply_lambdas(self):
         lambda_role = self.universal_stack_reference.get_output("lambda_role_arn")

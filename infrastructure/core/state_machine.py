@@ -4,7 +4,7 @@ import pulumi_aws as aws
 
 from typing import Dict
 
-from infrastructure.core.config_model import Config
+from infrastructure.core.models.config import Config
 
 # TODO: Probably want this to extend a abstract pipeline create class?
 class CreatePipelineStateMachine():
