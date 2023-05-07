@@ -1,7 +1,8 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="Pipelines",
+    name="10ds-core-pipelines",
+    version="0.0.1",
     packages=find_packages(include=["infrastructure"]),
     include_package_data=True,
 )

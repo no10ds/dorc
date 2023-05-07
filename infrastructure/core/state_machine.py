@@ -5,10 +5,10 @@ import pulumi_aws as aws
 from typing import Dict
 
 from infrastructure.core.models.config import Config
+from utils.abstracts import InfrastructureCreateBlock
 
 
-# TODO: Probably want this to extend a abstract pipeline create class?
-class CreatePipelineStateMachine:
+class CreatePipelineStateMachine(InfrastructureCreateBlock):
     def __init__(self, lambdas_dict: Dict, config: Config) -> None:
         self.lambdas_dict = lambdas_dict
         self.config = config

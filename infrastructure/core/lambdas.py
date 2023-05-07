@@ -3,9 +3,10 @@ import os
 import pulumi
 import pulumi_aws as aws
 
+from utils.abstracts import InfrastructureCreateBlock
 
-# TODO: Probably want this to extend a abstract pipeline create class?
-class CreatePipelineLambda:
+
+class CreatePipelineLambda(InfrastructureCreateBlock):
     # TODO: Move these parameters into a model
     def __init__(self, lambda_name: str, source_path: str) -> None:
         self.lambda_name = lambda_name

@@ -3,6 +3,8 @@ import pulumi
 from infrastructure.universal.core import (
     create_code_storage_bucket,
     create_cloudwatch_log_group,
+)
+from infrastructure.universal.iam import (
     create_state_function_role,
     create_state_function_policy,
     create_lambda_role,

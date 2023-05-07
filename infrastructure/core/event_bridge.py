@@ -1,13 +1,12 @@
 import json
-import pulumi
 import pulumi_aws as aws
 
 from infrastructure.core.models.event_bridge import EventBridge, S3EventBridgeModel
+from utils.abstracts import InfrastructureCreateBlock
 
 
-# TODO: Probably want this to extend a abstract pipeline create class?
 # TOOD: Probably want this as EventBridgeRule?
-class CreateEventBridge:
+class CreateEventBridge(InfrastructureCreateBlock):
     # TODO: Move these parameters into a model - this will need to handle other event types
     def __init__(
         self, event_bridge_name: str, bucket_name: str, key_prefix: str
@@ -33,7 +32,7 @@ class CreateEventBridge:
         return self.event_bridge.name
 
 
-class CreateEventBridgeTarget:
+class CreateEventBridgeTarget(InfrastructureCreateBlock):
     def __init__(
         self,
         universal_stack_reference,

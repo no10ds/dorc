@@ -11,17 +11,18 @@ from infrastructure.core.models.config import Config
 
 
 class CreatePipeline:
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: Dict | Config) -> None:
         try:
-            self.config = Config.parse_obj(config)
+            if type(config) is dict:
+                self.config = Config.parse_obj(config)
+            else:
+                self.config = config
         except ValidationError as e:
             # TODO: Probably want a custom error here
             raise Exception(str(e))
 
-        # TODO: Probably want this stack reference name as a config variable in the future
-        self.universal_stack_reference = pulumi.StackReference("universal")
-
-        # TODO: Is this the best name and variable structure for this?
+        universal_stack_name = os.getenv("UNIVERSAL_STACK_NAME", "universal")
+        self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
         self.created_lambdas = {}
 
         self.create_source_directory()
