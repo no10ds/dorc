@@ -10,11 +10,7 @@ from infrastructure.core.config_model import Config
 
 class CreatePipeline():
 
-    def __init__(self, file_path: str, pipeline_name: str, config: Dict) -> None:
-        # TODO: Probably want to perform some validation on these variables?
-        self.file_path = file_path
-        self.pipeline_name = pipeline_name
-
+    def __init__(self, config: Dict) -> None:
         try:
             self.config = Config.parse_obj(config)
         except ValidationError as e:
@@ -30,7 +26,7 @@ class CreatePipeline():
         self.create_source_directory()
 
     def create_source_directory(self):
-        top_dir = os.path.dirname(self.file_path)
+        top_dir = os.path.dirname(self.config.file_path)
         # TODO: Is hard coding this 'src' okay?
         self.src_dir = os.path.abspath(os.path.join(top_dir, 'src'))
 
@@ -50,7 +46,7 @@ class CreatePipeline():
 
     def apply_state_machine(self):
         state_machine_role = self.universal_stack_reference.get_output("state_function_role_arn")
-        CreatePipelineStateMachine(self.pipeline_name, self.created_lambdas, self.config).apply(state_machine_role)
+        CreatePipelineStateMachine(self.created_lambdas, self.config).apply(state_machine_role)
 
     def extract_lambda_name_from_top_dir(self, root_dir: str) -> str:
         # TODO: Alot of this is hardcoded and is dependant on the folder structure

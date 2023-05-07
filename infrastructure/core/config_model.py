@@ -6,6 +6,8 @@ class Pipeline(BaseModel):
     next_function: Optional[str] = None
 
 class Config(BaseModel):
+    file_path: str
+    pipeline_name: str
     pipelines: list[Pipeline]
 
     @validator("pipelines")

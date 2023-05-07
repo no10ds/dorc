@@ -9,8 +9,7 @@ from infrastructure.core.config_model import Config
 # TODO: Probably want this to extend a abstract pipeline create class?
 class CreatePipelineStateMachine():
 
-    def __init__(self, state_machine_name: str, lambdas_dict: Dict, config: Config) -> None:
-        self.state_machine_name = state_machine_name
+    def __init__(self, lambdas_dict: Dict, config: Config) -> None:
         self.lambdas_dict = lambdas_dict
         self.config = config
 
@@ -23,7 +22,7 @@ class CreatePipelineStateMachine():
         )
 
         aws.sfn.StateMachine(
-            resource_name=self.state_machine_name,
+            resource_name=self.config.pipeline_name,
             role_arn=state_machine_role,
             definition=state_machine_definition
         )
