@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, validator
 
@@ -7,9 +8,22 @@ class CloudwatchTrigger(BaseModel):
     key_prefix: str
 
 
+class NextPipelineTypes(str, Enum):
+    function = "function"
+    pipeline = "pipeline"
+
+
+class NextPipeline(BaseModel):
+    name: str
+    type: Optional[NextPipelineTypes] = NextPipelineTypes.function
+
+    class Config:
+        use_enum_values = True
+
+
 class Pipeline(BaseModel):
     function_name: str
-    next_function: Optional[str] = None
+    next_function: Optional[str | NextPipeline] = None
 
 
 class Config(BaseModel):

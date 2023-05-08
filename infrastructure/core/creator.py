@@ -13,7 +13,7 @@ from infrastructure.core.models.config import Config
 class CreatePipeline:
     def __init__(self, config: Dict | Config) -> None:
         try:
-            if type(config) is dict:
+            if isinstance(config, dict):
                 self.config = Config.parse_obj(config)
             else:
                 self.config = config
