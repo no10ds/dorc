@@ -49,7 +49,7 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
 
                 elif next_function_type == NextPipelineTypes.pipeline:
                     # This function wants to call another state machine
-                    _map = self.create_state_machine_definition(next_function.name)
+                    _map = self.create_pipeline_next_trigger_state(next_function.name)
             else:
                 # Create a simple lambda function next trigger
                 _map = self.create_lambda_next_trigger_state(

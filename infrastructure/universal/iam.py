@@ -36,7 +36,12 @@ def create_state_function_policy(state_function_role):
                 {
                     "Effect": "Allow",
                     "Action": [
-                        "states:StartExecution"
+                        "states:DescribeExecution",
+                        "states:StopExecution",
+                        "states:StartExecution",
+                        "events:PutTargets",
+                        "events:PutRule",
+                        "events:DescribeRule"
                     ],
                     "Resource": "*"
                 }
