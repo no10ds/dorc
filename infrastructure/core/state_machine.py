@@ -30,26 +30,28 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
     def create_state_machine_definition(self, arns: list):
         lambda_names = self.lambdas_dict.keys()
         name_to_arn_map = dict(zip(lambda_names, arns[0]))
+
         states_map = {}
 
         for pipeline in self.config.pipelines:
             # TODO: When defining a state function as the next trigger we don't need a function name
             # handle this case within the model and within this code
-            function_name = pipeline.function_name
+            function_name = self.create_function_name(pipeline.function_name)
             next_function = pipeline.next_function
 
             if isinstance(next_function, NextPipeline):
                 next_function_type = next_function.type
+                next_function_name = next_function.name
 
-                if next_function_type == NextPipelineTypes.function:
+                if next_function_type.value == "function":
                     # Create a simple lambda function next trigger
                     _map = self.create_lambda_next_trigger_state(
-                        name_to_arn_map[function_name], next_function.name
+                        name_to_arn_map[function_name], next_function_name
                     )
 
-                elif next_function_type == NextPipelineTypes.pipeline:
+                elif next_function_type.value == "pipeline":
                     # This function wants to call another state machine
-                    _map = self.create_pipeline_next_trigger_state(next_function.name)
+                    _map = self.create_pipeline_next_trigger_state(next_function_name)
             else:
                 # Create a simple lambda function next trigger
                 _map = self.create_lambda_next_trigger_state(
@@ -58,20 +60,24 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
 
             states_map[function_name] = _map
 
+        start_function_name = self.create_function_name(
+            self.config.pipelines[0].function_name
+        )
         # TODO: Define this comment in the wider configuration passed into class
         return f"""{{
             "Comment": "Example state machine function",
-            "StartAt": "{self.config.pipelines[0].function_name}",
+            "StartAt": "{start_function_name}",
             "States": {json.dumps(states_map)}
         }}"""
 
-    def create_lambda_next_trigger_state(self, arn, next_function):
+    def create_lambda_next_trigger_state(self, arn: str, next_function_name: str):
         _map = {"Type": "Task", "Resource": arn}
 
-        if next_function is None:
+        if next_function_name is None:
             _map["End"] = True
         else:
-            _map["Next"] = next_function
+            next_function_name = self.create_function_name(next_function_name)
+            _map["Next"] = next_function_name
 
         return _map
 
@@ -87,6 +93,10 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
         }
 
         return _map
+
+    def create_function_name(self, name) -> str:
+        pipeline_name = self.config.pipeline_name
+        return f"{pipeline_name}_{name}"
 
     def get_state_machine_arn(self):
         return self.state_machine.arn
