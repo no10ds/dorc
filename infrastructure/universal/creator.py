@@ -10,6 +10,7 @@ from infrastructure.universal.iam import (
     create_lambda_role,
     create_lambda_policy,
     create_cloudevent_state_machine_trigger_role,
+    create_cloudevent_state_machine_trigger_policy,
 )
 
 
@@ -32,6 +33,11 @@ class CreateUniversalPipelineInfrastructure:
 
         self.cloudevent_state_machine_trigger_role = (
             create_cloudevent_state_machine_trigger_role()
+        )
+        self.cloudevent_state_machine_trigger_policy = (
+            create_cloudevent_state_machine_trigger_policy(
+                self.cloudevent_state_machine_trigger_role
+            )
         )
 
         self.export()

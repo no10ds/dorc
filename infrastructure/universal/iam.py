@@ -90,7 +90,7 @@ def create_lambda_policy(lambda_role):
 
 def create_cloudevent_state_machine_trigger_role():
     return aws.iam.Role(
-        "cloudevent_state_machine_trigger_role",
+        "cloudevent-state-machine-trigger-role",
         assume_role_policy="""{
             "Version": "2012-10-17",
             "Statement": [
@@ -103,5 +103,24 @@ def create_cloudevent_state_machine_trigger_role():
                     "Sid": ""
                 }
             ]
+        }""",
+    )
+
+
+def create_cloudevent_state_machine_trigger_policy(
+    cloudevent_state_machine_trigger_role,
+):
+    return aws.iam.RolePolicy(
+        "cloudevent-state-machine-trigger-policy",
+        role=cloudevent_state_machine_trigger_role.id,
+        policy="""{
+            "Version": "2012-10-17",
+            "Statement": [{
+                "Effect": "Allow",
+                "Action": [
+                    "states:StartExecution"
+                ],
+                "Resource": "*"
+            }]
         }""",
     )

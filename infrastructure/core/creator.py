@@ -6,8 +6,11 @@ from pydantic import ValidationError
 
 from infrastructure.core.lambdas import CreatePipelineLambda
 from infrastructure.core.state_machine import CreatePipelineStateMachine
-from infrastructure.core.event_bridge import CreateEventBridge, CreateEventBridgeTarget
-from infrastructure.core.models.config import Config
+from infrastructure.core.event_bridge import (
+    CreateEventBridgeRule,
+    CreateEventBridgeTarget,
+)
+from infrastructure.core.models.config import Config, CloudwatchS3Trigger
 
 
 class CreatePipeline:
@@ -61,16 +64,12 @@ class CreatePipeline:
 
     def apply_cloudwatch_state_machine_trigger(self):
         trigger_config = self.config.cloudwatch_trigger
-        self.event_bridge = CreateEventBridge(
-            f"{self.config.pipeline_name}-cloudevent-trigger",
-            trigger_config.bucket_name,
-            trigger_config.key_prefix,
-        )
-        self.event_bridge.apply()
+        self.event_bridge_rule = CreateEventBridgeRule(trigger_config)
+        self.event_bridge_rule.apply()
         self.event_bridge_target = CreateEventBridgeTarget(
             self.universal_stack_reference,
             f"{self.config.pipeline_name}-cloudevent-trigger-target",
-            self.event_bridge.get_event_bridge_name(),
+            self.event_bridge_rule.get_event_bridge_name(),
             self.state_machine.get_state_machine_arn(),
         )
         self.event_bridge_target.apply()

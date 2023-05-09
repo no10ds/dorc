@@ -1,28 +1,18 @@
-import json
 import pulumi_aws as aws
 
-from infrastructure.core.models.event_bridge import EventBridge, S3EventBridgeModel
+from infrastructure.core.models.config import CloudwatchCronTrigger, CloudwatchS3Trigger
 from utils.abstracts import InfrastructureCreateBlock
 
 
-# TOOD: Probably want this as EventBridgeRule?
-class CreateEventBridge(InfrastructureCreateBlock):
-    # TODO: Move these parameters into a model - this will need to handle other event types
-    def __init__(
-        self, event_bridge_name: str, bucket_name: str, key_prefix: str
-    ) -> None:
-        self.event_bridge_name = event_bridge_name
-
-        self.event_bridge_model = EventBridge(
-            model=S3EventBridgeModel(bucket_name=bucket_name, key_prefix=key_prefix)
-        )
+class CreateEventBridgeRule(InfrastructureCreateBlock):
+    def __init__(self, cloudwatch_trigger: CloudwatchS3Trigger | CloudwatchCronTrigger):
+        self.cloudwatch_trigger = cloudwatch_trigger
 
     def apply(self):
         self.event_bridge = aws.cloudwatch.EventRule(
-            resource_name=self.event_bridge_name,
-            event_pattern=json.dumps(
-                self.event_bridge_model.return_event_bridge_pattern()
-            ),
+            resource_name=self.cloudwatch_trigger.name,
+            event_pattern=self.cloudwatch_trigger.event_pattern(),
+            schedule_expression=self.cloudwatch_trigger.schedule_expression(),
         )
 
     def get_event_bridge_arn(self):
