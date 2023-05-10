@@ -1,3 +1,5 @@
 pulumi
 pulumi_aws
+pulumi_docker
 pydantic
+gitpython
