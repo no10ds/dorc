@@ -33,6 +33,7 @@ class CreatePipeline:
 
         universal_stack_name = os.getenv("UNIVERSAL_STACK_NAME", "universal")
         self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
+        self.project = self.universal_stack_reference.get_output("project")
         self.created_lambdas = {}
 
         self.create_source_directory()
@@ -55,7 +56,11 @@ class CreatePipeline:
             self.apply_cloudwatch_state_machine_trigger()
 
     def build_and_deploy_folder_structure_functions(self, repo_url: str):
-        lambda_role = self.universal_stack_reference.get_output("lambda_role_arn")
+        lambda_role = self.project.apply(
+            lambda project: self.universal_stack_reference.get_output(
+                f"{project}_lambda_role_arn"
+            )
+        )
 
         for root, dirs, _ in os.walk(self.src_dir):
             if (root != self.src_dir) and (len(dirs) == 0):
@@ -87,27 +92,29 @@ class CreatePipeline:
                 )
 
                 # Create lambda function from Docker image
-                function = CreatePipelineLambda(lambda_name, root).apply(
+                function = CreatePipelineLambda(self.project, lambda_name, root).apply(
                     lambda_role, dockered_image.base_image_name
                 )
                 self.created_lambdas[lambda_name] = function
 
     def apply_ecr_repo(self):
-        self.ecr_repo = CreateECRRepo(self.config.pipeline_name)
+        self.ecr_repo = CreateECRRepo(self.project, self.config.pipeline_name)
         self.ecr_repo.apply()
 
     def apply_state_machine(self):
-        state_machine_role = self.universal_stack_reference.get_output(
-            "state_function_role_arn"
+        state_machine_role = self.project.apply(
+            lambda project: self.universal_stack_reference.get_output(
+                f"{project}_state_function_role_arn"
+            )
         )
         self.state_machine = CreatePipelineStateMachine(
-            self.created_lambdas, self.config
+            self.project, self.created_lambdas, self.config
         )
         self.state_machine.apply(state_machine_role)
 
     def apply_cloudwatch_state_machine_trigger(self):
         trigger_config = self.config.cloudwatch_trigger
-        self.event_bridge_rule = CreateEventBridgeRule(trigger_config)
+        self.event_bridge_rule = CreateEventBridgeRule(self.project, trigger_config)
         self.event_bridge_rule.apply()
         self.event_bridge_target = CreateEventBridgeTarget(
             self.universal_stack_reference,

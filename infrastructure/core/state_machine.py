@@ -1,15 +1,19 @@
 import json
 import pulumi
 import pulumi_aws as aws
+from pulumi import Output
 
-from typing import Dict
+from typing import Dict, Any
 
 from infrastructure.core.models.config import Config, NextPipeline, NextPipelineTypes
 from utils.abstracts import InfrastructureCreateBlock
 
 
 class CreatePipelineStateMachine(InfrastructureCreateBlock):
-    def __init__(self, lambdas_dict: Dict, config: Config) -> None:
+    def __init__(
+        self, project: Output[Any], lambdas_dict: Dict, config: Config
+    ) -> None:
+        self.project = project
         self.lambdas_dict = lambdas_dict
         self.config = config
 
@@ -21,10 +25,13 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
             [value.arn for value in self.lambdas_dict.values()]
         ).apply(lambda arns: self.create_state_machine_definition(arns))
 
-        self.state_machine = aws.sfn.StateMachine(
-            resource_name=self.config.pipeline_name,
-            role_arn=state_machine_role,
-            definition=state_machine_definition,
+        self.state_machine = self.project.apply(
+            lambda project: aws.sfn.StateMachine(
+                resource_name=f"{project}_{self.config.pipeline_name}",
+                name=f"{project}_{self.config.pipeline_name}",
+                role_arn=state_machine_role,
+                definition=state_machine_definition,
+            )
         )
 
     def create_state_machine_definition(self, arns: list):
