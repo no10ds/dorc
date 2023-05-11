@@ -1,126 +1,150 @@
+import pulumi
 import pulumi_aws as aws
 
+from utils.abstracts import InfrastructureCreateBlock
+from infrastructure.universal.config import Config
 
-def create_state_function_role():
-    return aws.iam.Role(
-        "state-function-role",
-        assume_role_policy="""{
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {
-                        "Service": "states.amazonaws.com"
+
+class CreateIAM(InfrastructureCreateBlock):
+    def __init__(self, config: Config):
+        self.config = config
+
+    def apply(self):
+        self.create_lambda_function_role()
+        self.create_lambda_function_role_policy()
+        self.create_state_function_role()
+        self.create_state_function_role_policy()
+        self.create_cloudevent_state_machine_trigger_role()
+        self.create_cloudevent_state_machine_trigger_role_policy()
+
+    def create_state_function_role(self):
+        name = f"{self.config.project}_state_function_role"
+        self.state_function_role = aws.iam.Role(
+            resource_name=name,
+            name=name,
+            assume_role_policy="""{
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {
+                                "Service": "states.amazonaws.com"
+                            },
+                            "Action": "sts:AssumeRole"
+                        }
+                    ]
+                }""",
+        )
+        pulumi.export(f"{name}_arn", self.state_function_role.arn)
+
+    def create_state_function_role_policy(self):
+        name = f"{self.config.project}_state_function_role_policy"
+        self.state_function_role_policy = aws.iam.RolePolicy(
+            resource_name=name,
+            name=name,
+            role=self.state_function_role.id,
+            policy="""{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "lambda:InvokeFunction"
+                        ],
+                        "Resource": "*"
                     },
-                    "Action": "sts:AssumeRole"
-                }
-            ]
-        }""",
-    )
+                    {
+                        "Effect": "Allow",
+                        "Action": [
+                            "states:DescribeExecution",
+                            "states:StopExecution",
+                            "states:StartExecution",
+                            "events:PutTargets",
+                            "events:PutRule",
+                            "events:DescribeRule"
+                        ],
+                        "Resource": "*"
+                    }
+                ]
+            }""",
+        )
 
+    def create_lambda_function_role(self):
+        name = f"{self.config.project}_lambda_role"
+        self.lambda_function_role = aws.iam.Role(
+            resource_name=name,
+            name=name,
+            assume_role_policy="""{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Principal": {
+                            "Service": "lambda.amazonaws.com"
+                        },
+                        "Effect": "Allow",
+                        "Sid": ""
+                    }
+                ]
+            }""",
+        )
+        pulumi.export(f"{name}_arn", self.lambda_function_role.arn)
 
-def create_state_function_policy(state_function_role):
-    return aws.iam.RolePolicy(
-        "state-function-role-policy",
-        role=state_function_role.id,
-        policy="""{
-            "Version": "2012-10-17",
-            "Statement": [
-                {
+    def create_lambda_function_role_policy(self):
+        name = f"{self.config.project}_lambda_role_policy"
+        self.lambda_function_role_policy = aws.iam.RolePolicy(
+            resource_name=name,
+            name=name,
+            role=self.lambda_function_role.id,
+            policy="""{
+                    "Version": "2012-10-17",
+                    "Statement": [{
+                        "Effect": "Allow",
+                        "Action": [
+                            "logs:CreateLogGroup",
+                            "logs:CreateLogStream",
+                            "logs:PutLogEvents"
+                        ],
+                        "Resource": "arn:aws:logs:*:*:*"
+                    }]
+                }""",
+        )
+
+    def create_cloudevent_state_machine_trigger_role(self):
+        name = f"{self.config.project}_cloudevent_state_machine_trigger_role"
+        self.cloudevent_state_machine_trigger_role = aws.iam.Role(
+            resource_name=name,
+            name=name,
+            assume_role_policy="""{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Principal": {
+                            "Service": "events.amazonaws.com"
+                        },
+                        "Effect": "Allow",
+                        "Sid": ""
+                    }
+                ]
+            }""",
+        )
+        pulumi.export(f"{name}_arn", self.cloudevent_state_machine_trigger_role.arn)
+
+    def create_cloudevent_state_machine_trigger_role_policy(self):
+        name = f"{self.config.project}_cloudevent_state_machine_trigger_policy"
+        self.cloudevent_state_machine_trigger_role_policy = aws.iam.RolePolicy(
+            resource_name=name,
+            name=name,
+            role=self.cloudevent_state_machine_trigger_role.id,
+            policy="""{
+                "Version": "2012-10-17",
+                "Statement": [{
                     "Effect": "Allow",
                     "Action": [
-                        "lambda:InvokeFunction"
+                        "states:StartExecution"
                     ],
                     "Resource": "*"
-                },
-                {
-                    "Effect": "Allow",
-                    "Action": [
-                        "states:DescribeExecution",
-                        "states:StopExecution",
-                        "states:StartExecution",
-                        "events:PutTargets",
-                        "events:PutRule",
-                        "events:DescribeRule"
-                    ],
-                    "Resource": "*"
-                }
-            ]
-        }""",
-    )
-
-
-def create_lambda_role():
-    return aws.iam.Role(
-        "lambda-role",
-        assume_role_policy="""{
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": "sts:AssumeRole",
-                    "Principal": {
-                        "Service": "lambda.amazonaws.com"
-                    },
-                    "Effect": "Allow",
-                    "Sid": ""
-                }
-            ]
-        }""",
-    )
-
-
-def create_lambda_policy(lambda_role):
-    return aws.iam.RolePolicy(
-        "lambda-role-policy",
-        role=lambda_role.id,
-        policy="""{
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Action": [
-                    "logs:CreateLogGroup",
-                    "logs:CreateLogStream",
-                    "logs:PutLogEvents"
-                ],
-                "Resource": "arn:aws:logs:*:*:*"
-            }]
-        }""",
-    )
-
-
-def create_cloudevent_state_machine_trigger_role():
-    return aws.iam.Role(
-        "cloudevent-state-machine-trigger-role",
-        assume_role_policy="""{
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Action": "sts:AssumeRole",
-                    "Principal": {
-                        "Service": "events.amazonaws.com"
-                    },
-                    "Effect": "Allow",
-                    "Sid": ""
-                }
-            ]
-        }""",
-    )
-
-
-def create_cloudevent_state_machine_trigger_policy(
-    cloudevent_state_machine_trigger_role,
-):
-    return aws.iam.RolePolicy(
-        "cloudevent-state-machine-trigger-policy",
-        role=cloudevent_state_machine_trigger_role.id,
-        policy="""{
-            "Version": "2012-10-17",
-            "Statement": [{
-                "Effect": "Allow",
-                "Action": [
-                    "states:StartExecution"
-                ],
-                "Resource": "*"
-            }]
-        }""",
-    )
+                }]
+            }""",
+        )

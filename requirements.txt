@@ -1,6 +1,8 @@
 pulumi
 pulumi_aws
 pulumi_docker
+pulumi-terraform
+python-dotenv
 pydantic
 gitpython
 checksumdir
