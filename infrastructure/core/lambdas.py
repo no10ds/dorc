@@ -12,11 +12,12 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
         self.lambda_name = lambda_name
         self.source_path = source_path
 
-    def apply(self, lambda_role):
+    def apply(self, lambda_role, image):
         return aws.lambda_.Function(
             resource_name=self.lambda_name,
             role=lambda_role,
-            runtime="python3.9",
-            handler="lambda.handler",
-            code=pulumi.AssetArchive({".": pulumi.FileArchive(self.source_path)}),
+            runtime=None,
+            handler=None,
+            package_type="Image",
+            image_uri=image,
         )
