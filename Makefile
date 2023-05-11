@@ -21,6 +21,10 @@ infra/apply:
 	PYTHONPATH=$(DIR) pulumi stack select $(instance)-$(layer) --create
 	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.main.yaml
 
+infra/refresh:
+	PYTHONPATH=$(DIR) pulumi stack select $(instance)-$(layer)
+	PYTHONPATH=$(DIR) pulumi refresh --config-file $(DIR)/Pulumi.main.yaml
+
 DIR_UNIVERSAL=$(CONFIG_REPO_PATH)/$(UNIVERSAL_STACK_NAME)
 
 infra/apply-universal:
