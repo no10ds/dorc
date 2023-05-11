@@ -3,6 +3,7 @@ import pulumi
 import pulumi_aws as aws
 import pulumi_docker as docker
 
+from checksumdir import dirhash
 from git.repo import Repo
 from typing import Dict
 from pydantic import ValidationError
@@ -60,15 +61,14 @@ class CreatePipeline:
             if (root != self.src_dir) and (len(dirs) == 0):
                 lambda_name = self.extract_lambda_name_from_top_dir(root)
                 code_path = self.extract_lambda_source_dir_from_top_dir(root)
-                commit = self.get_git_short_commit_head()
-                image_tag = f"{lambda_name}_{commit}"
-                image = f"{repo_url}:{image_tag}"
+                code_hash = dirhash(root)
+                image = f"{repo_url}:{lambda_name}_{code_hash}"
 
                 # TODO: Probs want this path as a configuration object (within Universal)?
                 dockerfile = f"{os.getenv('CONFIG_REPO_PATH')}/src/Dockerfile"
 
                 # Build and push lambda Docker image to ecr
-                docker.Image(
+                dockered_image = docker.Image(
                     resource_name=f"{self.config.pipeline_name}_{lambda_name}_image",
                     build=docker.DockerBuildArgs(
                         dockerfile=dockerfile,
@@ -87,8 +87,8 @@ class CreatePipeline:
                 )
 
                 # Create lambda function from Docker image
-                function = CreatePipelineLambda(lambda_name, root, image).apply(
-                    lambda_role
+                function = CreatePipelineLambda(lambda_name, root).apply(
+                    lambda_role, dockered_image.base_image_name
                 )
                 self.created_lambdas[lambda_name] = function
 
@@ -138,6 +138,3 @@ class CreatePipeline:
         directory = root_dir.replace("/src", "")
         splits = root_dir.split("/")
         return f"{splits[-5]}/{splits[-4]}/{splits[-3]}/{splits[-2]}/{splits[-1]}"
-
-    def get_git_short_commit_head(self):
-        return repo.head.object.hexsha[:6]
