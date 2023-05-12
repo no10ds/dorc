@@ -19,7 +19,7 @@ DIR=$(CONFIG_REPO_PATH)/src/$(instance)/$(layer)
 
 infra/apply:
 	PYTHONPATH=$(DIR) pulumi stack select $(instance)-$(layer) --create
-	PYTHONPATH=$(DIR) pulumi up --diff --config-file $(DIR)/Pulumi.main.yaml
+	PYTHONPATH=$(DIR) pulumi up --refresh="true" --diff --config-file $(DIR)/Pulumi.main.yaml
 
 infra/refresh:
 	PYTHONPATH=$(DIR) pulumi stack select $(instance)-$(layer)

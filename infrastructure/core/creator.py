@@ -87,9 +87,9 @@ class CreatePipeline:
                 )
 
                 # Create lambda function from Docker image
-                function = CreatePipelineLambda(self.project, lambda_name, root).apply(
-                    lambda_role, dockered_image.base_image_name
-                )
+                function = CreatePipelineLambda(
+                    self.universal_stack_reference, lambda_name, root
+                ).apply(lambda_role, dockered_image.base_image_name)
                 self.created_lambdas[lambda_name] = function
 
     def apply_ecr_repo(self):
