@@ -22,7 +22,6 @@ class CreateECRRepo(InfrastructureCreateBlock):
                 encryption_configurations=[
                     aws.ecr.RepositoryEncryptionConfigurationArgs(encryption_type="KMS")
                 ],
-                force_delete=True,
             )
         )
 
