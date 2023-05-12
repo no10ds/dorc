@@ -6,8 +6,8 @@ from pulumi import Output
 class Config(BaseModel):
     project: str
     config_repo_path: str
-    vpc_id: Output | str
-    private_subnet_ids: Output | list[str]
+    vpc_id: Output[str] | str
+    private_subnet_ids: Output[list[str]] | list[str]
 
     source_code_path: Optional[str] = "src"
 

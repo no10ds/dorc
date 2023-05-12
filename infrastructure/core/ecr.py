@@ -14,8 +14,8 @@ class CreateECRRepo(InfrastructureCreateBlock):
     def apply(self):
         self.ecr_repo = self.project.apply(
             lambda project: aws.ecr.Repository(
-                resource_name=f"{project}_{self.pipline_name}",
-                name=f"{project}_{self.pipline_name}",
+                resource_name=f"{project}-{self.pipline_name}",
+                name=f"{project}-{self.pipline_name}",
                 image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(
                     scan_on_push=True
                 ),
@@ -28,7 +28,7 @@ class CreateECRRepo(InfrastructureCreateBlock):
         self.export()
 
     def export(self):
-        pulumi.export(f"ecr_repository_{self.pipline_name}_arn", self.ecr_repo.arn)
+        pulumi.export(f"ecr-repository-{self.pipline_name}-arn", self.ecr_repo.arn)
 
     def get_repo_registry_id(self):
         return self.ecr_repo.registry_id

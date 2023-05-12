@@ -20,8 +20,8 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
     def apply(self, lambda_role, image):
         return self.project.apply(
             lambda project: aws.lambda_.Function(
-                resource_name=f"{project}_{self.lambda_name}",
-                name=f"{project}_{self.lambda_name}",
+                resource_name=f"{project}-{self.lambda_name}",
+                name=f"{project}-{self.lambda_name}",
                 role=lambda_role,
                 runtime=None,
                 handler=None,
@@ -29,16 +29,3 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
                 image_uri=image,
             )
         )
-
-    # def apply(self, lambda_role: Output[str], image: Output[str]):
-    #     return pulumi.Output.all(self.project, lambda_role, image).apply(
-    #         lambda outputs: aws.lambda_.Function(
-    #             resource_name=f"{outputs[0]}_{self.lambda_name}",
-    #             name=f"{outputs[0]}_{self.lambda_name}",
-    #             role=outputs[1],
-    #             runtime=None,
-    #             handler=None,
-    #             package_type="Image",
-    #             image_uri=outputs[2],
-    #         )
-    #     )

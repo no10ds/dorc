@@ -27,8 +27,8 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
 
         self.state_machine = self.project.apply(
             lambda project: aws.sfn.StateMachine(
-                resource_name=f"{project}_{self.config.pipeline_name}",
-                name=f"{project}_{self.config.pipeline_name}",
+                resource_name=f"{project}-{self.config.pipeline_name}",
+                name=f"{project}-{self.config.pipeline_name}",
                 role_arn=state_machine_role,
                 definition=state_machine_definition,
             )

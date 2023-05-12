@@ -22,8 +22,8 @@ class CreateUniversalPipelineInfrastructure:
 
     def apply(self) -> None:
         aws.cloudwatch.LogGroup(
-            f"{self.config.project}_pipelines_log_group",
-            name=f"{self.config.project}_pipelines_log_group",
+            f"{self.config.project}-pipelines-log-group",
+            name=f"{self.config.project}-pipelines-log-group",
         )
 
         CreateIAM(self.config).apply()
