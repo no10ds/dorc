@@ -3,14 +3,13 @@ from pulumi import Output
 import pulumi
 import pulumi_aws as aws
 
+from utils.exceptions import InvalidConfigException
 from infrastructure.universal.config import Config
 from infrastructure.universal.iam import CreateIAM
 
 
 class CreateUniversalPipelineInfrastructure:
     def __init__(self, config: dict | Config) -> None:
-        print(config)
-
         try:
             if isinstance(config, dict):
                 self.config = Config.parse_obj(config)
@@ -18,7 +17,7 @@ class CreateUniversalPipelineInfrastructure:
                 self.config = config
         except ValidationError as e:
             # TODO: Probably want a custom error here
-            raise Exception(str(e))
+            raise InvalidConfigException(str(e))
 
     def apply(self) -> None:
         aws.cloudwatch.LogGroup(

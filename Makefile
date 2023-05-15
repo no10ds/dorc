@@ -15,32 +15,27 @@ venv:
 infra/init:
 	pulumi login $(INFRA_BUCKET)
 
-DIR=$(CONFIG_REPO_PATH)/src/$(instance)/$(layer)
+# Define common variables
+DIR = $(CONFIG_REPO_PATH)/src/$(instance)/$(layer)
+DIR_UNIVERSAL = $(CONFIG_REPO_PATH)/$(UNIVERSAL_STACK_NAME)
 
 infra/set-stack:
-	PYTHONPATH=$(DIR) pulumi stack select $(instance)-$(layer) --create
+	PYTHONPATH=$(dir) pulumi stack select $(stack) --create
 
 infra/apply:
-	make infra/set-stack && \
-	PYTHONPATH=$(DIR) pulumi up --refresh="true" --diff --config-file $(DIR)/Pulumi.main.yaml
-
-infra/refresh:
-	make infra/set-stack && \
-	PYTHONPATH=$(DIR) pulumi refresh --config-file $(DIR)/Pulumi.main.yaml
+ifeq ($(instance), $(UNIVERSAL_STACK_NAME))
+	make infra/set-stack stack=universal dir=$(DIR_UNIVERSAL)
+	PYTHONPATH=$(DIR_UNIVERSAL) pulumi up --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml --refresh --diff --show-full-output
+else
+	make infra/set-stack stack=$(instance)-$(layer) dir=$(DIR)
+	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.main.yaml --refresh --diff --show-full-output
+endif
 
 infra/destroy:
-	make infra/set-stack && \
-	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.main.yaml
-
-DIR_UNIVERSAL=$(CONFIG_REPO_PATH)/$(UNIVERSAL_STACK_NAME)
-
-infra/set-stack-universal:
-	PYTHONPATH=$(DIR_UNIVERSAL) pulumi stack select universal --create
-
-infra/apply-universal:
-	make infra/set-stack-univesal && \
-	PYTHONPATH=$(DIR_UNIVERSAL) pulumi up --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml
-
-infra/destroy-universal:
-	make infra/set-stack-univesal && \
+ifeq ($(instance), $(UNIVERSAL_STACK_NAME))
+	make infra/set-stack stack=universal dir=$(DIR_UNIVERSAL)
 	PYTHONPATH=$(DIR_UNIVERSAL) pulumi destroy --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml
+else
+	make infra/set-stack stack=$(instance)-$(layer) dir=$(DIR)
+	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.main.yaml
+endif

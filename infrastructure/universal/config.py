@@ -10,6 +10,11 @@ class Config(BaseModel):
     private_subnet_ids: Output[list[str]] | list[str]
 
     source_code_path: Optional[str] = "src"
+    additional_lambda_role_policy_arn: Optional[Output[str] | str]
+    additional_state_function_role_policy_arn: Optional[Output[str] | str]
+    additional_cloudevent_state_machine_trigger_role_policy_arn: Optional[
+        Output[str] | str
+    ]
 
     class Config:
         arbitrary_types_allowed = True

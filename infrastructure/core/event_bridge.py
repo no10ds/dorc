@@ -48,7 +48,7 @@ class CreateEventBridgeTarget(InfrastructureCreateBlock):
 
     def apply(self):
         cloudevent_trigger_arn = self.universal_stack_reference.get_output(
-            "cloudevent-state-machine-trigger-role-arn"
+            "cloudevent_state_machine_trigger_role_arn"
         )
         self.project.apply(
             lambda project: aws.cloudwatch.EventTarget(

@@ -28,7 +28,7 @@ class CreateECRRepo(InfrastructureCreateBlock):
         self.export()
 
     def export(self):
-        pulumi.export(f"ecr-repository-{self.pipline_name}-arn", self.ecr_repo.arn)
+        pulumi.export(f"ecr_repository_{self.pipline_name}_arn", self.ecr_repo.arn)
 
     def get_repo_registry_id(self):
         return self.ecr_repo.registry_id

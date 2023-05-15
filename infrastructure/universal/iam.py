@@ -1,5 +1,6 @@
 import pulumi
 import pulumi_aws as aws
+from pulumi import Output
 
 from utils.abstracts import InfrastructureCreateBlock
 from infrastructure.universal.config import Config
@@ -16,6 +17,18 @@ class CreateIAM(InfrastructureCreateBlock):
         self.create_state_function_role_policy()
         self.create_cloudevent_state_machine_trigger_role()
         self.create_cloudevent_state_machine_trigger_role_policy()
+
+        if self.config.additional_lambda_role_policy_arn is not None:
+            self.apply_additional_lambda_role_policy()
+
+        if self.config.additional_state_function_role_policy_arn is not None:
+            self.apply_additional_state_function_role_policy()
+
+        if (
+            self.config.additional_cloudevent_state_machine_trigger_role_policy_arn
+            is not None
+        ):
+            self.apply_additional_cloudevent_state_machine_trigger_role_policy()
 
     def create_state_function_role(self):
         name = f"{self.config.project}-state-function-role"
@@ -35,7 +48,7 @@ class CreateIAM(InfrastructureCreateBlock):
                     ]
                 }""",
         )
-        pulumi.export("state-function-role-arn", self.state_function_role.arn)
+        pulumi.export("state_function_role_arn", self.state_function_role.arn)
 
     def create_state_function_role_policy(self):
         name = f"{self.config.project}-state-function-role-policy"
@@ -88,7 +101,7 @@ class CreateIAM(InfrastructureCreateBlock):
                 ]
             }""",
         )
-        pulumi.export("lambda-role-arn", self.lambda_function_role.arn)
+        pulumi.export("lambda_role_arn", self.lambda_function_role.arn)
 
     def create_lambda_function_role_policy(self):
         name = f"{self.config.project}-lambda-role-policy"
@@ -141,7 +154,7 @@ class CreateIAM(InfrastructureCreateBlock):
             }""",
         )
         pulumi.export(
-            "cloudevent-state-machine-trigger-role-arn",
+            "cloudevent_state_machine_trigger_role_arn",
             self.cloudevent_state_machine_trigger_role.arn,
         )
 
@@ -162,3 +175,37 @@ class CreateIAM(InfrastructureCreateBlock):
                 }]
             }""",
         )
+
+    def apply_additional_lambda_role_policy(self):
+        name = f"{self.config.project}_additional_lambda_role_policy_attachment"
+        policy_arn = self.to_output(self.config.additional_lambda_role_policy_arn)
+        aws.iam.RolePolicyAttachment(
+            resource_name=name,
+            policy_arn=policy_arn,
+            role=self.lambda_function_role.name,
+        )
+
+    def apply_additional_state_function_role_policy(self):
+        name = f"{self.config.project}_additional_state_function_role_policy_attachment"
+        policy_arn = self.to_output(
+            self.config.additional_state_function_role_policy_arn
+        )
+        aws.iam.RolePolicyAttachment(
+            resource_name=name,
+            policy_arn=policy_arn,
+            role=self.state_function_role.name,
+        )
+
+    def apply_additional_cloudevent_state_machine_trigger_role_policy(self):
+        name = f"{self.config.project}_additional_cloudevent_state_machine_trigger_role_policy_attachment"
+        policy_arn = self.to_output(
+            self.config.additional_cloudevent_state_machine_trigger_role_policy_arn
+        )
+        aws.iam.RolePolicyAttachment(
+            resource_name=name,
+            policy_arn=policy_arn,
+            role=self.state_function_role.name,
+        )
+
+    def to_output(self, v):
+        return v if isinstance(v, Output) else Output.from_input(v)

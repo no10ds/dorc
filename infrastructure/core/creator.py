@@ -56,7 +56,7 @@ class CreatePipeline:
             self.apply_cloudwatch_state_machine_trigger()
 
     def build_and_deploy_folder_structure_functions(self, repo_url: str):
-        lambda_role = self.universal_stack_reference.get_output("lambda-role-arn")
+        lambda_role = self.universal_stack_reference.get_output("lambda_role_arn")
         for root, dirs, _ in os.walk(self.src_dir):
             if (root != self.src_dir) and (len(dirs) == 0):
                 lambda_name = self.extract_lambda_name_from_top_dir(root)
@@ -98,7 +98,7 @@ class CreatePipeline:
 
     def apply_state_machine(self):
         state_machine_role = self.universal_stack_reference.get_output(
-            "state-function-role-arn"
+            "state_function_role_arn"
         )
         self.state_machine = CreatePipelineStateMachine(
             self.project, self.created_lambdas, self.config
