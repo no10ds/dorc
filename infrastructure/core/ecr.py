@@ -1,22 +1,28 @@
 import pulumi
 import pulumi_aws as aws
+from typing import Any
+from pulumi import Output
 
 from utils.abstracts import InfrastructureCreateBlock
 
 
 class CreateECRRepo(InfrastructureCreateBlock):
-    def __init__(self, pipeline_name: str):
+    def __init__(self, project: Output[Any], pipeline_name: str):
+        self.project = project
         self.pipline_name = pipeline_name
 
     def apply(self):
-        self.ecr_repo = aws.ecr.Repository(
-            resource_name=self.pipline_name,
-            image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(
-                scan_on_push=True
-            ),
-            encryption_configurations=[
-                aws.ecr.RepositoryEncryptionConfigurationArgs(encryption_type="KMS")
-            ],
+        self.ecr_repo = self.project.apply(
+            lambda project: aws.ecr.Repository(
+                resource_name=f"{project}-{self.pipline_name}",
+                name=f"{project}-{self.pipline_name}",
+                image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(
+                    scan_on_push=True
+                ),
+                encryption_configurations=[
+                    aws.ecr.RepositoryEncryptionConfigurationArgs(encryption_type="KMS")
+                ],
+            )
         )
 
         self.export()
