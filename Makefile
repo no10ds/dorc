@@ -27,8 +27,8 @@ ifeq ($(instance), $(UNIVERSAL_STACK_NAME))
 	make infra/set-stack stack=universal dir=$(DIR_UNIVERSAL)
 	PYTHONPATH=$(DIR_UNIVERSAL) pulumi up --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml --refresh --diff --show-full-output
 else
-	make infra/set-stack stack=$(instance)-$(layer) dir=$(DIR)
-	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.main.yaml --refresh --diff --show-full-output
+	make infra/set-stack stack=$(instance)-$(layer)-$(ENVIRONMENT) dir=$(DIR)
+	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(ENVIRONMENT).yaml --refresh --diff --show-full-output
 endif
 
 infra/destroy:
@@ -36,6 +36,6 @@ ifeq ($(instance), $(UNIVERSAL_STACK_NAME))
 	make infra/set-stack stack=universal dir=$(DIR_UNIVERSAL)
 	PYTHONPATH=$(DIR_UNIVERSAL) pulumi destroy --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml
 else
-	make infra/set-stack stack=$(instance)-$(layer) dir=$(DIR)
-	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.main.yaml
+	make infra/set-stack stack=$(instance)-$(layer)-$(ENVIRONMENT) dir=$(DIR)
+	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.$(ENVIRONMENT).yaml
 endif
