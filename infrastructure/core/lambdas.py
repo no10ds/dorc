@@ -3,7 +3,8 @@ import os
 import pulumi
 import pulumi_aws as aws
 from typing import Any
-from pulumi import Output
+from pulumi import Output, ResourceOptions
+from pulumi_aws import Provider
 
 from utils.abstracts import InfrastructureCreateBlock
 
@@ -11,8 +12,13 @@ from utils.abstracts import InfrastructureCreateBlock
 class CreatePipelineLambda(InfrastructureCreateBlock):
     # TODO: Move these parameters into a model
     def __init__(
-        self, universal_stack_reference, lambda_name: str, source_path: str
+        self,
+        aws_provider: Provider,
+        universal_stack_reference,
+        lambda_name: str,
+        source_path: str,
     ) -> None:
+        self.aws_provider = aws_provider
         self.lambda_name = lambda_name
         self.source_path = source_path
 
@@ -42,6 +48,7 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
                     security_group_ids=[args["security_group_ids"].id],
                     subnet_ids=args["private_subnet_ids"],
                 ),
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )
 
@@ -62,5 +69,8 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
                         cidr_blocks=["0.0.0.0/0"],
                     )
                 ],
+                opts=ResourceOptions(
+                    provider=self.aws_provider, delete_before_replace=True
+                ),
             )
         )

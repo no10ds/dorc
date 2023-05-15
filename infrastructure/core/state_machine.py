@@ -1,7 +1,8 @@
 import json
 import pulumi
 import pulumi_aws as aws
-from pulumi import Output
+from pulumi import Output, ResourceOptions
+from pulumi_aws import Provider
 
 from typing import Dict, Any
 
@@ -11,8 +12,13 @@ from utils.abstracts import InfrastructureCreateBlock
 
 class CreatePipelineStateMachine(InfrastructureCreateBlock):
     def __init__(
-        self, project: Output[Any], lambdas_dict: Dict, config: Config
+        self,
+        aws_provider: Provider,
+        project: Output[Any],
+        lambdas_dict: Dict,
+        config: Config,
     ) -> None:
+        self.aws_provider = aws_provider
         self.project = project
         self.lambdas_dict = lambdas_dict
         self.config = config
@@ -31,6 +37,7 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
                 name=f"{project}-{self.config.pipeline_name}",
                 role_arn=state_machine_role,
                 definition=state_machine_definition,
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )
 

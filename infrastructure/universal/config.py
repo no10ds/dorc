@@ -4,8 +4,10 @@ from pulumi import Output
 
 
 class Config(BaseModel):
+    region: str
     project: str
     config_repo_path: str
+    tags: Optional[dict] = dict()
     vpc_id: Output[str] | str
     private_subnet_ids: Output[list[str]] | list[str]
 

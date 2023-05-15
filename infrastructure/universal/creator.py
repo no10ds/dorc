@@ -1,9 +1,10 @@
 from pydantic import ValidationError
-from pulumi import Output
+from pulumi import Output, ResourceOptions
 import pulumi
 import pulumi_aws as aws
 
 from utils.exceptions import InvalidConfigException
+from utils.provider import create_aws_provider
 from infrastructure.universal.config import Config
 from infrastructure.universal.iam import CreateIAM
 
@@ -19,13 +20,16 @@ class CreateUniversalPipelineInfrastructure:
             # TODO: Probably want a custom error here
             raise InvalidConfigException(str(e))
 
+        self.aws_provider = create_aws_provider(self.config.region, self.config.tags)
+
     def apply(self) -> None:
         aws.cloudwatch.LogGroup(
             f"{self.config.project}-pipelines-log-group",
             name=f"{self.config.project}-pipelines-log-group",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
-        CreateIAM(self.config).apply()
+        CreateIAM(self.aws_provider, self.config).apply()
 
         self.export()
 

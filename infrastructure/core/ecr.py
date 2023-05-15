@@ -1,13 +1,17 @@
 import pulumi
 import pulumi_aws as aws
 from typing import Any
-from pulumi import Output
+from pulumi import Output, ResourceOptions
+from pulumi_aws import Provider
 
 from utils.abstracts import InfrastructureCreateBlock
 
 
 class CreateECRRepo(InfrastructureCreateBlock):
-    def __init__(self, project: Output[Any], pipeline_name: str):
+    def __init__(
+        self, aws_provider: Provider, project: Output[Any], pipeline_name: str
+    ):
+        self.aws_provider = aws_provider
         self.project = project
         self.pipline_name = pipeline_name
 
@@ -19,9 +23,11 @@ class CreateECRRepo(InfrastructureCreateBlock):
                 image_scanning_configuration=aws.ecr.RepositoryImageScanningConfigurationArgs(
                     scan_on_push=True
                 ),
+                force_delete=True,
                 encryption_configurations=[
                     aws.ecr.RepositoryEncryptionConfigurationArgs(encryption_type="KMS")
                 ],
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )
 

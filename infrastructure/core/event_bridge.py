@@ -1,6 +1,7 @@
 import pulumi_aws as aws
 from typing import Any
-from pulumi import Output
+from pulumi import Output, ResourceOptions
+from pulumi_aws import Provider
 
 from infrastructure.core.models.config import CloudwatchCronTrigger, CloudwatchS3Trigger
 from utils.abstracts import InfrastructureCreateBlock
@@ -9,9 +10,11 @@ from utils.abstracts import InfrastructureCreateBlock
 class CreateEventBridgeRule(InfrastructureCreateBlock):
     def __init__(
         self,
+        aws_provider: Provider,
         project: Output[Any],
         cloudwatch_trigger: CloudwatchS3Trigger | CloudwatchCronTrigger,
     ):
+        self.aws_provider = aws_provider
         self.project = project
         self.cloudwatch_trigger = cloudwatch_trigger
 
@@ -22,6 +25,7 @@ class CreateEventBridgeRule(InfrastructureCreateBlock):
                 name=f"{project}-{self.cloudwatch_trigger.name}",
                 event_pattern=self.cloudwatch_trigger.event_pattern(),
                 schedule_expression=self.cloudwatch_trigger.schedule_expression(),
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )
 
@@ -35,11 +39,13 @@ class CreateEventBridgeRule(InfrastructureCreateBlock):
 class CreateEventBridgeTarget(InfrastructureCreateBlock):
     def __init__(
         self,
+        aws_provider: Provider,
         universal_stack_reference,
         event_bridge_target_name: str,
         event_bridge_rule_name: str,
         state_machine_arn,
     ) -> None:
+        self.aws_provider = aws_provider
         self.event_bridge_target_name = event_bridge_target_name
         self.event_bridge_rule_name = event_bridge_rule_name
         self.state_machine_arn = state_machine_arn
@@ -57,5 +63,6 @@ class CreateEventBridgeTarget(InfrastructureCreateBlock):
                 rule=self.event_bridge_rule_name,
                 arn=self.state_machine_arn,
                 role_arn=cloudevent_trigger_arn,
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )

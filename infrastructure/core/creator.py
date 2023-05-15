@@ -8,6 +8,7 @@ from git.repo import Repo
 from typing import Dict
 from pydantic import ValidationError
 
+from utils.provider import create_aws_provider
 from infrastructure.core.lambdas import CreatePipelineLambda
 from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.event_bridge import (
@@ -34,6 +35,13 @@ class CreatePipeline:
         universal_stack_name = os.getenv("UNIVERSAL_STACK_NAME", "universal")
         self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
         self.project = self.universal_stack_reference.get_output("project")
+        self.region = self.universal_stack_reference.get_output("region")
+        self.tags = self.universal_stack_reference.get_output("tags")
+
+        self.aws_provider = create_aws_provider(self.region, self.tags)
+        # self.aws_provider = pulumi.Output.all(region=self.region, tags=self.tags).apply(
+        #     lambda outputs: create_aws_provider(outputs["region"], outputs["tags"])
+        # )
         self.created_lambdas = {}
 
         self.create_source_directory()
@@ -88,12 +96,14 @@ class CreatePipeline:
 
                 # Create lambda function from Docker image
                 function = CreatePipelineLambda(
-                    self.universal_stack_reference, lambda_name, root
+                    self.aws_provider, self.universal_stack_reference, lambda_name, root
                 ).apply(lambda_role, dockered_image.base_image_name)
                 self.created_lambdas[lambda_name] = function
 
     def apply_ecr_repo(self):
-        self.ecr_repo = CreateECRRepo(self.project, self.config.pipeline_name)
+        self.ecr_repo = CreateECRRepo(
+            self.aws_provider, self.project, self.config.pipeline_name
+        )
         self.ecr_repo.apply()
 
     def apply_state_machine(self):
@@ -101,15 +111,18 @@ class CreatePipeline:
             "state_function_role_arn"
         )
         self.state_machine = CreatePipelineStateMachine(
-            self.project, self.created_lambdas, self.config
+            self.aws_provider, self.project, self.created_lambdas, self.config
         )
         self.state_machine.apply(state_machine_role)
 
     def apply_cloudwatch_state_machine_trigger(self):
         trigger_config = self.config.cloudwatch_trigger
-        self.event_bridge_rule = CreateEventBridgeRule(self.project, trigger_config)
+        self.event_bridge_rule = CreateEventBridgeRule(
+            self.aws_provider, self.project, trigger_config
+        )
         self.event_bridge_rule.apply()
         self.event_bridge_target = CreateEventBridgeTarget(
+            self.aws_provider,
             self.universal_stack_reference,
             f"{self.config.pipeline_name}-cloudevent-trigger-target",
             self.event_bridge_rule.get_event_bridge_name(),

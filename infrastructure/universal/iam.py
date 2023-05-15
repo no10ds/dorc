@@ -1,13 +1,15 @@
 import pulumi
 import pulumi_aws as aws
-from pulumi import Output
+from pulumi import Output, ResourceOptions
+from pulumi_aws import Provider
 
 from utils.abstracts import InfrastructureCreateBlock
 from infrastructure.universal.config import Config
 
 
 class CreateIAM(InfrastructureCreateBlock):
-    def __init__(self, config: Config):
+    def __init__(self, aws_provider: Provider, config: Config):
+        self.aws_provider = aws_provider
         self.config = config
 
     def apply(self):
@@ -47,6 +49,7 @@ class CreateIAM(InfrastructureCreateBlock):
                         }
                     ]
                 }""",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
         pulumi.export("state_function_role_arn", self.state_function_role.arn)
 
@@ -80,6 +83,7 @@ class CreateIAM(InfrastructureCreateBlock):
                     }
                 ]
             }""",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def create_lambda_function_role(self):
@@ -100,6 +104,7 @@ class CreateIAM(InfrastructureCreateBlock):
                     }
                 ]
             }""",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
         pulumi.export("lambda_role_arn", self.lambda_function_role.arn)
 
@@ -132,6 +137,7 @@ class CreateIAM(InfrastructureCreateBlock):
                         }
                     ]
                 }""",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def create_cloudevent_state_machine_trigger_role(self):
@@ -152,6 +158,7 @@ class CreateIAM(InfrastructureCreateBlock):
                     }
                 ]
             }""",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
         pulumi.export(
             "cloudevent_state_machine_trigger_role_arn",
@@ -174,6 +181,7 @@ class CreateIAM(InfrastructureCreateBlock):
                     "Resource": "*"
                 }]
             }""",
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def apply_additional_lambda_role_policy(self):
@@ -183,6 +191,7 @@ class CreateIAM(InfrastructureCreateBlock):
             resource_name=name,
             policy_arn=policy_arn,
             role=self.lambda_function_role.name,
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def apply_additional_state_function_role_policy(self):
@@ -194,6 +203,7 @@ class CreateIAM(InfrastructureCreateBlock):
             resource_name=name,
             policy_arn=policy_arn,
             role=self.state_function_role.name,
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def apply_additional_cloudevent_state_machine_trigger_role_policy(self):
@@ -205,6 +215,7 @@ class CreateIAM(InfrastructureCreateBlock):
             resource_name=name,
             policy_arn=policy_arn,
             role=self.state_function_role.name,
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def to_output(self, v):
