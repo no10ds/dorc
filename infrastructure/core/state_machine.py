@@ -23,7 +23,7 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
         self.lambdas_dict = lambdas_dict
         self.config = config
 
-        # TODO: We probably want to do some validation of the config agaisnt the lambdas dict
+        # TODO: We probably want to do some validation of the config against the lambdas dict
         # they can't specify a key in the config that is not actually a deployed lambda
 
     def apply(self, state_machine_role):

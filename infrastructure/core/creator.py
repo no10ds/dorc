@@ -81,9 +81,10 @@ class CreatePipeline:
                     build=docker.DockerBuildArgs(
                         dockerfile=dockerfile,
                         platform="linux/amd64",
-                        args={"CODE_PATH": code_path},
+                        args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
+                        builder_version="BuilderBuildKit",
                         context=os.getenv("CONFIG_REPO_PATH"),
-                        # cache_from=docker.CacheFromArgs(images=[image]),
+                        cache_from=docker.CacheFromArgs(images=[image]),
                     ),
                     image_name=image,
                     skip_push=False,
