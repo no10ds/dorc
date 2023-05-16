@@ -3,11 +3,13 @@ import pulumi
 import pulumi_aws as aws
 import pulumi_docker as docker
 
+from pulumi import ResourceOptions
 from checksumdir import dirhash
 from git.repo import Repo
 from typing import Dict
 from pydantic import ValidationError
 
+from utils.tagging import register_default_tags
 from utils.provider import create_aws_provider
 from infrastructure.core.lambdas import CreatePipelineLambda
 from infrastructure.core.state_machine import CreatePipelineStateMachine
@@ -37,11 +39,9 @@ class CreatePipeline:
         self.project = self.universal_stack_reference.get_output("project")
         self.region = self.universal_stack_reference.get_output("region")
         self.tags = self.universal_stack_reference.get_output("tags")
+        self.tags.apply(lambda tags: register_default_tags(tags))
+        self.aws_provider = create_aws_provider(self.region)
 
-        self.aws_provider = create_aws_provider(self.region, self.tags)
-        # self.aws_provider = pulumi.Output.all(region=self.region, tags=self.tags).apply(
-        #     lambda outputs: create_aws_provider(outputs["region"], outputs["tags"])
-        # )
         self.created_lambdas = {}
 
         self.create_source_directory()
@@ -83,7 +83,7 @@ class CreatePipeline:
                         platform="linux/amd64",
                         args={"CODE_PATH": code_path},
                         context=os.getenv("CONFIG_REPO_PATH"),
-                        cache_from=docker.CacheFromArgs(images=[image]),
+                        # cache_from=docker.CacheFromArgs(images=[image]),
                     ),
                     image_name=image,
                     skip_push=False,
@@ -92,12 +92,13 @@ class CreatePipeline:
                         password=self.registry_info.password,
                         username=self.registry_info.user_name,
                     ),
+                    opts=ResourceOptions(provider=self.aws_provider),
                 )
 
                 # Create lambda function from Docker image
                 function = CreatePipelineLambda(
                     self.aws_provider, self.universal_stack_reference, lambda_name, root
-                ).apply(lambda_role, dockered_image.base_image_name)
+                ).apply(lambda_role, dockered_image)
                 self.created_lambdas[lambda_name] = function
 
     def apply_ecr_repo(self):

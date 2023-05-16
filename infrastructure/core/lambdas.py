@@ -5,6 +5,7 @@ import pulumi_aws as aws
 from typing import Any
 from pulumi import Output, ResourceOptions
 from pulumi_aws import Provider
+from pulumi_docker import Image
 
 from utils.abstracts import InfrastructureCreateBlock
 
@@ -29,12 +30,13 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
         )
         self.vpc_id = universal_stack_reference.get_output("vpc_id")
 
-    def apply(self, lambda_role, image):
+    def apply(self, lambda_role, image: Image):
         return pulumi.Output.all(
             project=self.project,
             vpc_id=self.vpc_id,
             private_subnet_ids=self.private_subnet_ids,
             security_group_ids=self.create_lambda_security_group(),
+            image_uri=image.base_image_name,
         ).apply(
             lambda args: aws.lambda_.Function(
                 resource_name=f"{args['project']}-{self.lambda_name}",
@@ -43,12 +45,12 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
                 runtime=None,
                 handler=None,
                 package_type="Image",
-                image_uri=image,
+                image_uri=args["image_uri"],
                 vpc_config=aws.lambda_.FunctionVpcConfigArgs(
                     security_group_ids=[args["security_group_ids"].id],
                     subnet_ids=args["private_subnet_ids"],
                 ),
-                opts=ResourceOptions(provider=self.aws_provider),
+                opts=ResourceOptions(provider=self.aws_provider, depends_on=[image]),
             )
         )
 
