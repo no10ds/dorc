@@ -31,11 +31,12 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
         self.vpc_id = universal_stack_reference.get_output("vpc_id")
 
     def apply(self, lambda_role, image: Image):
+        security_group = self.create_lambda_security_group()
         return pulumi.Output.all(
             project=self.project,
             vpc_id=self.vpc_id,
             private_subnet_ids=self.private_subnet_ids,
-            security_group_ids=self.create_lambda_security_group(),
+            security_group_ids=security_group,
             image_uri=image.base_image_name,
         ).apply(
             lambda args: aws.lambda_.Function(
@@ -50,7 +51,11 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
                     security_group_ids=[args["security_group_ids"].id],
                     subnet_ids=args["private_subnet_ids"],
                 ),
-                opts=ResourceOptions(provider=self.aws_provider, depends_on=[image]),
+                opts=ResourceOptions(
+                    provider=self.aws_provider,
+                    delete_before_replace=True,
+                    depends_on=[image, security_group],
+                ),
             )
         )
 
@@ -71,8 +76,6 @@ class CreatePipelineLambda(InfrastructureCreateBlock):
                         cidr_blocks=["0.0.0.0/0"],
                     )
                 ],
-                opts=ResourceOptions(
-                    provider=self.aws_provider, delete_before_replace=True
-                ),
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )
