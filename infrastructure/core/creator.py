@@ -5,6 +5,7 @@ import pulumi_aws as aws
 import pulumi_docker as docker
 
 from pulumi import ResourceOptions
+from pulumi_docker import Image
 from pydantic import ValidationError
 from checksumdir import dirhash
 
@@ -81,43 +82,51 @@ class CreatePipeline(InfrastructureCreateBlock):
         for root, dirs, _ in os.walk(self.src_dir):
             if root != self.src_dir and len(dirs) == 0:
                 lambda_name = self.extract_lambda_name_from_top_dir(root)
-                code_path = self.extract_lambda_source_dir_from_top_dir(root)
-                code_hash = dirhash(root)
-                image = f"{url}:{lambda_name}_{code_hash}"
+                image = self.apply_docker_image_build_and_push(url, lambda_name, root)
+                function = self.apply_lambda_function(lambda_name, image)
 
-                # TODO: Probs want this path as a configuration object (within Universal)?
-                dockerfile = f"{os.getenv('CONFIG_REPO_PATH')}/src/Dockerfile"
-
-                dockered_image = docker.Image(
-                    resource_name=f"{self.pipeline_name}_{lambda_name}_image",
-                    build=docker.DockerBuildArgs(
-                        dockerfile=dockerfile,
-                        platform="linux/amd64",
-                        args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
-                        builder_version="BuilderBuildKit",
-                        # TODO: Do we get this from envs or config?
-                        context=os.getenv("CONFIG_REPO_PATH"),
-                        cache_from=docker.CacheFromArgs(images=[image]),
-                    ),
-                    image_name=image,
-                    skip_push=False,
-                    registry=docker.RegistryArgs(
-                        server=url,
-                        password=self.registry_info.password,
-                        username=self.registry_info.user_name,
-                    ),
-                    opts=ResourceOptions(self.aws_provider),
-                )
-
-                lambda_ = CreatePipelineLambdaFunction(
-                    self.config,
-                    self.aws_provider,
-                    self.environment,
-                    self.lambda_role,
-                    lambda_name,
-                )
-                function = lambda_.apply(dockered_image)
                 self.created_lambdas[lambda_name] = function
+
+    def apply_docker_image_build_and_push(
+        self, url: str, lambda_name: str, root: str
+    ) -> Image:
+        code_path = self.extract_lambda_source_dir_from_top_dir(root)
+        code_hash = dirhash(root)
+        image = f"{url}:{lambda_name}_{code_hash}"
+
+        # TODO: Do we want this path as a configuration object?
+        dockerfile = f"{os.getenv('CONFIG_REPO_PATH')}/src/Dockerfile"
+
+        return docker.Image(
+            resource_name=f"{self.pipeline_name}_{lambda_name}_image",
+            build=docker.DockerBuildArgs(
+                dockerfile=dockerfile,
+                platform="linux/amd64",
+                args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
+                builder_version="BuilderBuildKit",
+                # TODO: Do we get this from envs or config?
+                context=os.getenv("CONFIG_REPO_PATH"),
+                cache_from=docker.CacheFromArgs(images=[image]),
+            ),
+            image_name=image,
+            skip_push=False,
+            registry=docker.RegistryArgs(
+                server=url,
+                password=self.registry_info.password,
+                username=self.registry_info.user_name,
+            ),
+            opts=ResourceOptions(self.aws_provider),
+        )
+
+    def apply_lambda_function(self, lambda_name: str, image: Image):
+        lambda_ = CreatePipelineLambdaFunction(
+            self.config,
+            self.aws_provider,
+            self.environment,
+            self.lambda_role,
+            lambda_name,
+        )
+        return lambda_.apply(image)
 
     def apply_state_machine(self):
         state_machine_creator = CreatePipelineStateMachine(
