@@ -1,7 +1,8 @@
+import os
+import re
 import pulumi
 import pulumi_aws as aws
 import pulumi_docker as docker
-import os
 
 from pulumi import ResourceOptions
 from pydantic import ValidationError
@@ -21,7 +22,7 @@ from utils.exceptions import InvalidPipelineDefinitionException
 
 class CreatePipeline(InfrastructureCreateBlock):
     def __init__(
-        self, config: dict | Config, pipeline_definition: dict | PipelineDefinition
+        self, config: Config, pipeline_definition: dict | PipelineDefinition
     ) -> None:
         super().__init__(config)
 
@@ -50,7 +51,7 @@ class CreatePipeline(InfrastructureCreateBlock):
             "cloudevent_state_machine_trigger_role_arn"
         )
 
-        self.pipeline_name = self.pipeline_definition.pipeline_name
+        self.pipeline_name = self.generate_pipeline_name_from_directory()
 
         self.created_lambdas = {}
         self.create_source_directory()
@@ -123,6 +124,7 @@ class CreatePipeline(InfrastructureCreateBlock):
             self.config,
             self.aws_provider,
             self.environment,
+            self.pipeline_name,
             self.pipeline_definition,
             self.created_lambdas,
             self.state_machine_role,
@@ -139,6 +141,7 @@ class CreatePipeline(InfrastructureCreateBlock):
             self.config,
             self.aws_provider,
             self.environment,
+            self.pipeline_name,
             self.pipeline_definition,
             event_rule.name,
             self.state_machine,
@@ -167,3 +170,13 @@ class CreatePipeline(InfrastructureCreateBlock):
         directory = root_dir.replace("/src", "")
         splits = root_dir.split("/")
         return f"{splits[-5]}/{splits[-4]}/{splits[-3]}/{splits[-2]}/{splits[-1]}"
+
+    def generate_pipeline_name_from_directory(self):
+        path = self.pipeline_definition.file_path
+        matcher = f"{self.config.config_repo_path}/src"
+        return (
+            re.split(matcher, path)[-1]
+            .strip("/")
+            .replace("/__main__.py", "")
+            .replace("/", "-")
+        )

@@ -52,7 +52,6 @@ class Function(BaseModel):
 
 class PipelineDefinition(BaseModel):
     file_path: str
-    pipeline_name: str
     functions: list[Function]
     cloudwatch_trigger: Optional[CloudwatchS3Trigger | CloudwatchCronTrigger] = None
 

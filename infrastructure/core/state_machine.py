@@ -22,11 +22,13 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
         config: Config,
         aws_provider: Provider,
         environment: str | None,
+        pipeline_name: str,
         pipeline_definition: PipelineDefinition,
         lambdas_dict: dict,
         state_machine_role,
     ) -> None:
         super().__init__(config, aws_provider, environment)
+        self.pipeline_name = pipeline_name
         self.pipeline_definition = pipeline_definition
         self.lambdas_dict = lambdas_dict
         self.state_machine_role = state_machine_role
@@ -37,7 +39,7 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
             [value.arn for value in self.lambdas_dict.values()]
         ).apply(lambda arns: self.create_state_machine_definition(arns))
 
-        name = f"{self.project}-{self.environment}-{self.pipeline_definition.pipeline_name}"
+        name = f"{self.project}-{self.environment}-{self.pipeline_name}"
         return aws.sfn.StateMachine(
             resource_name=name,
             name=name,
@@ -115,5 +117,4 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
         return _map
 
     def create_function_name(self, name) -> str:
-        pipeline_name = self.pipeline_definition.pipeline_name
-        return f"{pipeline_name}_{name}".replace("-", "_")
+        return f"{self.pipeline_name}_{name}".replace("-", "_")
