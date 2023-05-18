@@ -10,12 +10,16 @@ from utils.config import Config
 
 class CreatePipelineLambdaFunction(ResourceCreateBlock):
     def __init__(
-        self, config: Config, aws_provider: Provider, lambda_role, function_name: str
+        self,
+        config: Config,
+        aws_provider: Provider,
+        environment: str | None,
+        lambda_role,
+        function_name: str,
     ) -> None:
-        super().__init__(config, aws_provider)
+        super().__init__(config, aws_provider, environment)
 
         self.project = self.config.project
-        self.environment = self.config.environment
         self.lambda_role = lambda_role
         self.function_name = function_name
 

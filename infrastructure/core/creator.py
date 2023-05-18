@@ -109,7 +109,11 @@ class CreatePipeline(InfrastructureCreateBlock):
                 )
 
                 lambda_ = CreatePipelineLambdaFunction(
-                    self.config, self.aws_provider, self.lambda_role, lambda_name
+                    self.config,
+                    self.aws_provider,
+                    self.environment,
+                    self.lambda_role,
+                    lambda_name,
                 )
                 function = lambda_.apply(dockered_image)
                 self.created_lambdas[lambda_name] = function
@@ -118,6 +122,7 @@ class CreatePipeline(InfrastructureCreateBlock):
         state_machine_creator = CreatePipelineStateMachine(
             self.config,
             self.aws_provider,
+            self.environment,
             self.pipeline_definition,
             self.created_lambdas,
             self.state_machine_role,
@@ -127,12 +132,13 @@ class CreatePipeline(InfrastructureCreateBlock):
     def apply_cloudwatch_state_machine_trigger(self):
         trigger_config = self.pipeline_definition.cloudwatch_trigger
         self.event_bridge_rule = CreateEventBridgeRule(
-            self.config, self.aws_provider, trigger_config
+            self.config, self.aws_provider, self.environment, trigger_config
         )
         event_rule = self.event_bridge_rule.apply()
         self.event_bridge_target = CreateEventBridgeTarget(
             self.config,
             self.aws_provider,
+            self.environment,
             self.pipeline_definition,
             event_rule.name,
             self.state_machine,

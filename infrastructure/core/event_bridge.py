@@ -17,12 +17,12 @@ class CreateEventBridgeRule(ResourceCreateBlock):
         self,
         config: Config,
         aws_provider: Provider,
+        environment: str | None,
         cloudwatch_trigger: CloudwatchS3Trigger | CloudwatchCronTrigger,
     ) -> None:
-        super().__init__(config, aws_provider)
+        super().__init__(config, aws_provider, environment)
         self.cloudwatch_trigger = cloudwatch_trigger
         self.project = self.config.project
-        self.environment = self.config.environment
 
     def apply(self):
         name = f"{self.project}-{self.environment}-{self.cloudwatch_trigger.name}"
@@ -40,18 +40,18 @@ class CreateEventBridgeTarget(ResourceCreateBlock):
         self,
         config: Config,
         aws_provider: Provider,
+        environment: str | None,
         pipeline_definition: PipelineDefinition,
         event_bridge_rule_name: str,
         state_machine,
         cloudevent_trigger_role_arn,
     ) -> None:
-        super().__init__(config, aws_provider)
+        super().__init__(config, aws_provider, environment)
         self.pipeline_definition = pipeline_definition
         self.event_bridge_rule_name = event_bridge_rule_name
         self.state_machine = state_machine
         self.cloudevent_trigger_role_arn = cloudevent_trigger_role_arn
         self.project = self.config.project
-        self.environment = self.config.environment
 
     def apply(self):
         name = f"{self.project}-{self.environment}-{self.pipeline_definition.pipeline_name}-target"

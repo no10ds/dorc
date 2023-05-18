@@ -8,11 +8,11 @@ from utils.config import Config
 
 
 class CreateIamResource(ResourceCreateBlock):
-    def __init__(self, config: Config, aws_provider: Provider) -> None:
-        super().__init__(config, aws_provider)
-
+    def __init__(
+        self, config: Config, aws_provider: Provider, environment: str | None
+    ) -> None:
+        super().__init__(config, aws_provider, environment)
         self.project = self.config.project
-        self.environment = self.config.environment
 
     def apply(self):
         self.create_lambda_function_role()

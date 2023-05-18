@@ -21,16 +21,16 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
         self,
         config: Config,
         aws_provider: Provider,
+        environment: str | None,
         pipeline_definition: PipelineDefinition,
         lambdas_dict: dict,
         state_machine_role,
     ) -> None:
-        super().__init__(config, aws_provider)
+        super().__init__(config, aws_provider, environment)
         self.pipeline_definition = pipeline_definition
         self.lambdas_dict = lambdas_dict
         self.state_machine_role = state_machine_role
         self.project = self.config.project
-        self.environment = self.config.environment
 
     def apply(self):
         state_machine_definition = pulumi.Output.all(

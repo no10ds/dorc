@@ -8,7 +8,7 @@ from utils.config import UniversalConfig
 
 class CreateUniversal(InfrastructureCreateBlock):
     def __init__(self, config: UniversalConfig) -> None:
-        super().__init__(config)
+        super().__init__(config, skip_environment_check=True)
         self.repo_list = self.retrieve_repo_list_from_folders()
 
     def retrieve_repo_list_from_folders(self) -> list[str]:
