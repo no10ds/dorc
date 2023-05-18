@@ -45,8 +45,9 @@ class CreatePipeline(InfrastructureCreateBlock):
         universal_stack_name = os.getenv("UNIVERSAL_STACK_NAME", "universal")
         infra_stack_name = os.getenv("INFRA_STACK_NAME", "infra")
         self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
-        # TODO: Environment specific this
-        self.infra_stack_reference = pulumi.StackReference(f"{infra_stack_name}-dev")
+        self.infra_stack_reference = pulumi.StackReference(
+            f"{infra_stack_name}-{self.environment}"
+        )
 
         self.lambda_role_arn = self.infra_stack_reference.get_output(LAMBDA_ROLE_ARN)
         self.state_machine_role_arn = self.infra_stack_reference.get_output(
