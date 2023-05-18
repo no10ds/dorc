@@ -18,6 +18,11 @@ from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.models.definition import PipelineDefinition
 from utils.abstracts import InfrastructureCreateBlock
 from utils.config import Config
+from utils.constants import (
+    LAMBDA_ROLE_ARN,
+    STATE_FUNCTION_ROLE_ARN,
+    CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
+)
 from utils.exceptions import InvalidPipelineDefinitionException
 
 
@@ -43,13 +48,12 @@ class CreatePipeline(InfrastructureCreateBlock):
         # TODO: Environment specific this
         self.infra_stack_reference = pulumi.StackReference(f"{infra_stack_name}-dev")
 
-        # TODO: Change the name of these to arns
-        self.lambda_role = self.infra_stack_reference.get_output("lambda_role_arn")
-        self.state_machine_role = self.infra_stack_reference.get_output(
-            "state_function_role_arn"
+        self.lambda_role_arn = self.infra_stack_reference.get_output(LAMBDA_ROLE_ARN)
+        self.state_machine_role_arn = self.infra_stack_reference.get_output(
+            STATE_FUNCTION_ROLE_ARN
         )
-        self.cloudevent_trigger_role = self.infra_stack_reference.get_output(
-            "cloudevent_state_machine_trigger_role_arn"
+        self.cloudevent_trigger_role_arn = self.infra_stack_reference.get_output(
+            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
         )
 
         self.pipeline_name = self.generate_pipeline_name_from_directory()
@@ -123,7 +127,7 @@ class CreatePipeline(InfrastructureCreateBlock):
             self.config,
             self.aws_provider,
             self.environment,
-            self.lambda_role,
+            self.lambda_role_arn,
             lambda_name,
         )
         return lambda_.apply(image)
@@ -136,7 +140,7 @@ class CreatePipeline(InfrastructureCreateBlock):
             self.pipeline_name,
             self.pipeline_definition,
             self.created_lambdas,
-            self.state_machine_role,
+            self.state_machine_role_arn,
         )
         self.state_machine = state_machine_creator.apply()
 
@@ -154,7 +158,7 @@ class CreatePipeline(InfrastructureCreateBlock):
             self.pipeline_definition,
             event_rule.name,
             self.state_machine,
-            self.cloudevent_trigger_role,
+            self.cloudevent_trigger_role_arn,
         )
         self.event_bridge_target.apply()
 

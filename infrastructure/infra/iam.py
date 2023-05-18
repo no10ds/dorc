@@ -5,6 +5,11 @@ from pulumi import ResourceOptions, Output
 from pulumi_aws import Provider
 from utils.abstracts import ResourceCreateBlock
 from utils.config import Config
+from utils.constants import (
+    STATE_FUNCTION_ROLE_ARN,
+    LAMBDA_ROLE_ARN,
+    CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
+)
 
 
 class CreateIamResource(ResourceCreateBlock):
@@ -53,7 +58,7 @@ class CreateIamResource(ResourceCreateBlock):
                 }""",
             opts=ResourceOptions(provider=self.aws_provider),
         )
-        pulumi.export("state_function_role_arn", self.state_function_role.arn)
+        pulumi.export(STATE_FUNCTION_ROLE_ARN, self.state_function_role.arn)
 
     def create_state_function_role_policy(self):
         name = f"{self.project}-{self.environment}-state-function-role-policy"
@@ -108,7 +113,7 @@ class CreateIamResource(ResourceCreateBlock):
             }""",
             opts=ResourceOptions(provider=self.aws_provider),
         )
-        pulumi.export("lambda_role_arn", self.lambda_function_role.arn)
+        pulumi.export(LAMBDA_ROLE_ARN, self.lambda_function_role.arn)
 
     def create_lambda_function_role_policy(self):
         name = f"{self.project}-{self.environment}-lambda-role-policy"
@@ -163,7 +168,7 @@ class CreateIamResource(ResourceCreateBlock):
             opts=ResourceOptions(provider=self.aws_provider),
         )
         pulumi.export(
-            "cloudevent_state_machine_trigger_role_arn",
+            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
             self.cloudevent_state_machine_trigger_role.arn,
         )
 
