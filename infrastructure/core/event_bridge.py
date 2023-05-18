@@ -1,68 +1,66 @@
 import pulumi_aws as aws
-from typing import Any
-from pulumi import Output, ResourceOptions
+
+from pulumi import ResourceOptions
 from pulumi_aws import Provider
 
-from infrastructure.core.models.config import CloudwatchCronTrigger, CloudwatchS3Trigger
-from utils.abstracts import InfrastructureCreateBlock
+from infrastructure.core.models.definition import (
+    CloudwatchCronTrigger,
+    CloudwatchS3Trigger,
+    PipelineDefinition,
+)
+from utils.abstracts import ResourceCreateBlock
+from utils.config import Config
 
 
-class CreateEventBridgeRule(InfrastructureCreateBlock):
+class CreateEventBridgeRule(ResourceCreateBlock):
     def __init__(
         self,
+        config: Config,
         aws_provider: Provider,
-        project: Output[Any],
         cloudwatch_trigger: CloudwatchS3Trigger | CloudwatchCronTrigger,
-    ):
-        self.aws_provider = aws_provider
-        self.project = project
+    ) -> None:
+        super().__init__(config, aws_provider)
         self.cloudwatch_trigger = cloudwatch_trigger
+        self.project = self.config.project
+        self.environment = self.config.environment
 
     def apply(self):
-        self.event_bridge = self.project.apply(
-            lambda project: aws.cloudwatch.EventRule(
-                resource_name=f"{project}-{self.cloudwatch_trigger.name}",
-                name=f"{project}-{self.cloudwatch_trigger.name}",
-                event_pattern=self.cloudwatch_trigger.event_pattern(),
-                schedule_expression=self.cloudwatch_trigger.schedule_expression(),
-                opts=ResourceOptions(provider=self.aws_provider),
-            )
+        name = f"{self.project}-{self.environment}-{self.cloudwatch_trigger.name}"
+        return aws.cloudwatch.EventRule(
+            resource_name=name,
+            name=name,
+            event_pattern=self.cloudwatch_trigger.event_pattern(),
+            schedule_expression=self.cloudwatch_trigger.schedule_expression(),
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
-    def get_event_bridge_arn(self):
-        return self.event_bridge.arn
 
-    def get_event_bridge_name(self):
-        return self.event_bridge.name
-
-
-class CreateEventBridgeTarget(InfrastructureCreateBlock):
+class CreateEventBridgeTarget(ResourceCreateBlock):
     def __init__(
         self,
+        config: Config,
         aws_provider: Provider,
-        universal_stack_reference,
-        event_bridge_target_name: str,
+        pipeline_definition: PipelineDefinition,
         event_bridge_rule_name: str,
-        state_machine_arn,
+        state_machine,
+        cloudevent_trigger_role_arn,
     ) -> None:
-        self.aws_provider = aws_provider
-        self.event_bridge_target_name = event_bridge_target_name
+        super().__init__(config, aws_provider)
+        self.pipeline_definition = pipeline_definition
         self.event_bridge_rule_name = event_bridge_rule_name
-        self.state_machine_arn = state_machine_arn
-        self.universal_stack_reference = universal_stack_reference
-        self.project = self.universal_stack_reference.get_output("project")
+        self.state_machine = state_machine
+        self.cloudevent_trigger_role_arn = cloudevent_trigger_role_arn
+        self.project = self.config.project
+        self.environment = self.config.environment
 
     def apply(self):
-        cloudevent_trigger_arn = self.universal_stack_reference.get_output(
-            "cloudevent_state_machine_trigger_role_arn"
-        )
-        self.project.apply(
-            lambda project: aws.cloudwatch.EventTarget(
-                resource_name=f"{project}-{self.event_bridge_target_name}",
-                name=f"{project}-{self.event_bridge_target_name}",
-                rule=self.event_bridge_rule_name,
-                arn=self.state_machine_arn,
-                role_arn=cloudevent_trigger_arn,
-                opts=ResourceOptions(provider=self.aws_provider),
-            )
+        name = f"{self.project}-{self.environment}-{self.pipeline_definition.pipeline_name}-target"
+        return aws.cloudwatch.EventTarget(
+            resource_name=name,
+            rule=self.event_bridge_rule_name,
+            arn=self.state_machine.arn,
+            role_arn=self.cloudevent_trigger_role_arn,
+            opts=ResourceOptions(
+                provider=self.aws_provider, depends_on=[self.state_machine]
+            ),
         )

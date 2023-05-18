@@ -1,44 +1,49 @@
 import json
+
 import pulumi
 import pulumi_aws as aws
-from pulumi import Output, ResourceOptions
+
+from pulumi import ResourceOptions
 from pulumi_aws import Provider
 
-from typing import Dict, Any
+from infrastructure.core.models.definition import (
+    PipelineDefinition,
+    NextFunction,
+    NextFunctionTypes,
+)
 
-from infrastructure.core.models.config import Config, NextPipeline, NextPipelineTypes
-from utils.abstracts import InfrastructureCreateBlock
+from utils.abstracts import ResourceCreateBlock
+from utils.config import Config
 
 
-class CreatePipelineStateMachine(InfrastructureCreateBlock):
+class CreatePipelineStateMachine(ResourceCreateBlock):
     def __init__(
         self,
-        aws_provider: Provider,
-        project: Output[Any],
-        lambdas_dict: Dict,
         config: Config,
+        aws_provider: Provider,
+        pipeline_definition: PipelineDefinition,
+        lambdas_dict: dict,
+        state_machine_role,
     ) -> None:
-        self.aws_provider = aws_provider
-        self.project = project
+        super().__init__(config, aws_provider)
+        self.pipeline_definition = pipeline_definition
         self.lambdas_dict = lambdas_dict
-        self.config = config
+        self.state_machine_role = state_machine_role
+        self.project = self.config.project
+        self.environment = self.config.environment
 
-        # TODO: We probably want to do some validation of the config against the lambdas dict
-        # they can't specify a key in the config that is not actually a deployed lambda
-
-    def apply(self, state_machine_role):
+    def apply(self):
         state_machine_definition = pulumi.Output.all(
             [value.arn for value in self.lambdas_dict.values()]
         ).apply(lambda arns: self.create_state_machine_definition(arns))
 
-        self.state_machine = self.project.apply(
-            lambda project: aws.sfn.StateMachine(
-                resource_name=f"{project}-{self.config.pipeline_name}",
-                name=f"{project}-{self.config.pipeline_name}",
-                role_arn=state_machine_role,
-                definition=state_machine_definition,
-                opts=ResourceOptions(provider=self.aws_provider),
-            )
+        name = f"{self.project}-{self.environment}-{self.pipeline_definition.pipeline_name}"
+        return aws.sfn.StateMachine(
+            resource_name=name,
+            name=name,
+            role_arn=self.state_machine_role,
+            definition=state_machine_definition,
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def create_state_machine_definition(self, arns: list):
@@ -47,23 +52,23 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
 
         states_map = {}
 
-        for pipeline in self.config.pipelines:
+        for pipeline in self.pipeline_definition.functions:
             # TODO: When defining a state function as the next trigger we don't need a function name
             # handle this case within the model and within this code
-            function_name = self.create_function_name(pipeline.function_name)
+            function_name = self.create_function_name(pipeline.name)
             next_function = pipeline.next_function
 
-            if isinstance(next_function, NextPipeline):
+            if isinstance(next_function, NextFunction):
                 next_function_type = next_function.type
                 next_function_name = next_function.name
 
-                if next_function_type.value == "function":
+                if next_function_type == NextFunctionTypes.FUNCTION:
                     # Create a simple lambda function next trigger
                     _map = self.create_lambda_next_trigger_state(
                         name_to_arn_map[function_name], next_function_name
                     )
 
-                elif next_function_type.value == "pipeline":
+                elif next_function_type == NextFunctionTypes.PIPELINE:
                     # This function wants to call another state machine
                     _map = self.create_pipeline_next_trigger_state(next_function_name)
             else:
@@ -75,8 +80,9 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
             states_map[function_name] = _map
 
         start_function_name = self.create_function_name(
-            self.config.pipelines[0].function_name
+            self.pipeline_definition.functions[0].name
         )
+
         # TODO: Define this comment in the wider configuration passed into class
         return f"""{{
             "Comment": "Example state machine function",
@@ -109,8 +115,5 @@ class CreatePipelineStateMachine(InfrastructureCreateBlock):
         return _map
 
     def create_function_name(self, name) -> str:
-        pipeline_name = self.config.pipeline_name
-        return f"{pipeline_name}_{name}"
-
-    def get_state_machine_arn(self):
-        return self.state_machine.arn
+        pipeline_name = self.pipeline_definition.pipeline_name
+        return f"{pipeline_name}_{name}".replace("-", "_")

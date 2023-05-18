@@ -18,18 +18,31 @@ infra/init:
 # Define common variables
 DIR = $(CONFIG_REPO_PATH)/src/$(instance)/$(layer)
 DIR_UNIVERSAL = $(CONFIG_REPO_PATH)/$(UNIVERSAL_STACK_NAME)
+DIR_INFRA = $(CONFIG_REPO_PATH)/$(INFRA_STACK_NAME)
 
 infra/set-stack:
 	PYTHONPATH=$(dir) pulumi stack select $(stack) --create
 
 infra/apply:
+
 ifeq ($(instance), $(UNIVERSAL_STACK_NAME))
 	make infra/set-stack stack=universal dir=$(DIR_UNIVERSAL)
 	PYTHONPATH=$(DIR_UNIVERSAL) pulumi up --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml --show-replacement-steps $(ARGS)
+else ifeq ($(instance), $(INFRA_STACK_NAME))
+	make infra/set-stack stack=$(INFRA_STACK_NAME)-$(ENVIRONMENT) dir=$(DIR_INFRA)
+	PYTHONPATH=$(DIR_INFRA) pulumi up --config-file $(DIR_INFRA)/Pulumi.$(ENVIRONMENT).yaml --show-replacement-steps $(ARGS)
 else
 	make infra/set-stack stack=$(instance)-$(layer)-$(ENVIRONMENT) dir=$(DIR)
 	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(ENVIRONMENT).yaml --show-replacement-steps $(ARGS)
 endif
+
+# ifeq ($(instance), $(UNIVERSAL_STACK_NAME))
+# 	make infra/set-stack stack=universal dir=$(DIR_UNIVERSAL)
+# 	PYTHONPATH=$(DIR_UNIVERSAL) pulumi up --config-file $(DIR_UNIVERSAL)/Pulumi.$(UNIVERSAL_STACK_NAME).yaml --show-replacement-steps $(ARGS)
+# else
+# 	make infra/set-stack stack=$(instance)-$(layer)-$(ENVIRONMENT) dir=$(DIR)
+# 	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(ENVIRONMENT).yaml --show-replacement-steps $(ARGS)
+# endif
 
 infra/destroy:
 ifeq ($(instance), $(UNIVERSAL_STACK_NAME))

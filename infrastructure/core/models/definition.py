@@ -1,5 +1,5 @@
 import json
-from enum import Enum
+from enum import StrEnum
 from typing import Optional
 from pydantic import BaseModel, validator
 
@@ -35,38 +35,35 @@ class CloudwatchCronTrigger(BaseModel):
         return self.cron
 
 
-class NextPipelineTypes(str, Enum):
-    function = "function"
-    pipeline = "pipeline"
+class NextFunctionTypes(StrEnum):
+    FUNCTION = "Function"
+    PIPELINE = "Pipeline"
 
 
-class NextPipeline(BaseModel):
+class NextFunction(BaseModel):
     name: str
-    type: Optional[NextPipelineTypes] = NextPipelineTypes.function
-
-    class Config:
-        use_enum_values = True
+    type: Optional[NextFunctionTypes] = NextFunctionTypes.FUNCTION
 
 
-class Pipeline(BaseModel):
-    function_name: str
-    next_function: Optional[str | NextPipeline] = None
+class Function(BaseModel):
+    name: str
+    next_function: Optional[str | NextFunction] = None
 
 
-class Config(BaseModel):
+class PipelineDefinition(BaseModel):
     file_path: str
     pipeline_name: str
-    pipelines: list[Pipeline]
+    functions: list[Function]
     cloudwatch_trigger: Optional[CloudwatchS3Trigger | CloudwatchCronTrigger] = None
 
-    @validator("pipelines")
-    def check_for_only_one_termination(cls, value: list[Pipeline]):
+    @validator("functions")
+    def check_for_only_one_termination(cls, value: list[Function]):
         nones_found = 0
-        for pipeline in value:
-            if pipeline.next_function is None:
+        for function in value:
+            if function.next_function is None:
                 nones_found += 1
             if nones_found > 1:
                 raise ValueError(
-                    "Pipeline config can only contain one termination step"
+                    "Pipeline definition can only contain one termination step"
                 )
         return value

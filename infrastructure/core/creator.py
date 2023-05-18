@@ -1,144 +1,152 @@
-import os
 import pulumi
 import pulumi_aws as aws
 import pulumi_docker as docker
+import os
 
 from pulumi import ResourceOptions
-from checksumdir import dirhash
-from git.repo import Repo
-from typing import Dict
 from pydantic import ValidationError
+from checksumdir import dirhash
 
-from utils.tagging import register_default_tags
-from utils.provider import create_aws_provider
-from infrastructure.core.lambdas import CreatePipelineLambda
-from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.event_bridge import (
     CreateEventBridgeRule,
     CreateEventBridgeTarget,
 )
-from infrastructure.core.ecr import CreateECRRepo
-from infrastructure.core.models.config import Config, CloudwatchS3Trigger
+from infrastructure.core.lambda_ import CreatePipelineLambdaFunction
+from infrastructure.core.state_machine import CreatePipelineStateMachine
+from infrastructure.core.models.definition import PipelineDefinition
+from utils.abstracts import InfrastructureCreateBlock
+from utils.config import Config
+from utils.exceptions import InvalidPipelineDefinitionException
 
-repo = Repo(search_parent_directories=True)
 
+class CreatePipeline(InfrastructureCreateBlock):
+    def __init__(
+        self, config: dict | Config, pipeline_definition: dict | PipelineDefinition
+    ) -> None:
+        super().__init__(config)
 
-class CreatePipeline:
-    def __init__(self, config: Dict | Config) -> None:
         try:
-            if isinstance(config, dict):
-                self.config = Config.parse_obj(config)
+            if isinstance(pipeline_definition, dict):
+                self.pipeline_definition = PipelineDefinition.parse_obj(
+                    pipeline_definition
+                )
             else:
-                self.config = config
-        except ValidationError as e:
-            # TODO: Probably want a custom error here
-            raise Exception(str(e))
+                self.pipeline_definition = pipeline_definition
+        except ValidationError as exception:
+            raise InvalidPipelineDefinitionException(str(exception))
 
         universal_stack_name = os.getenv("UNIVERSAL_STACK_NAME", "universal")
+        infra_stack_name = os.getenv("INFRA_STACK_NAME", "infra")
         self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
-        self.project = self.universal_stack_reference.get_output("project")
-        self.region = self.universal_stack_reference.get_output("region")
-        self.tags = self.universal_stack_reference.get_output("tags")
-        self.tags.apply(lambda tags: register_default_tags(tags))
-        self.aws_provider = create_aws_provider(self.region)
+        # TODO: Environment specific this
+        self.infra_stack_reference = pulumi.StackReference(f"{infra_stack_name}-dev")
+
+        # TODO: Change the name of these to arns
+        self.lambda_role = self.infra_stack_reference.get_output("lambda_role_arn")
+        self.state_machine_role = self.infra_stack_reference.get_output(
+            "state_function_role_arn"
+        )
+        self.cloudevent_trigger_role = self.infra_stack_reference.get_output(
+            "cloudevent_state_machine_trigger_role_arn"
+        )
+
+        self.pipeline_name = self.pipeline_definition.pipeline_name
 
         self.created_lambdas = {}
-
         self.create_source_directory()
 
     def create_source_directory(self):
-        top_dir = os.path.dirname(self.config.file_path)
-        # TODO: Is hard coding this 'src' okay?
-        self.src_dir = os.path.abspath(os.path.join(top_dir, "src"))
+        top_dir = os.path.dirname(self.pipeline_definition.file_path)
+        self.src_dir = os.path.abspath(
+            os.path.join(top_dir, self.config.source_code_path)
+        )
 
     def apply(self):
-        self.apply_ecr_repo()
         self.authenticate_to_ecr_repo()
 
-        self.ecr_repo.get_repo_url().apply(
-            lambda repo_url: self.build_and_deploy_folder_structure_functions(repo_url)
-        ).apply(lambda _: self.apply_state_machine())
+        ecr_repo_url_output = self.universal_stack_reference.get_output(
+            f"ecr_repository_{self.pipeline_name}_url"
+        )
 
-        # The state machine can be triggered by a cloudwatch event trigger
-        if self.config.cloudwatch_trigger is not None:
-            self.apply_cloudwatch_state_machine_trigger()
+        ecr_repo_url_output.apply(
+            lambda url: self.build_and_deploy_folder_structure_functions(url)
+        ).apply(lambda _: self.apply_state_machine()).apply(
+            lambda _: self.apply_cloudwatch_state_machine_trigger()
+            if self.pipeline_definition.cloudwatch_trigger is not None
+            else None
+        )
 
-    def build_and_deploy_folder_structure_functions(self, repo_url: str):
-        lambda_role = self.universal_stack_reference.get_output("lambda_role_arn")
+    def build_and_deploy_folder_structure_functions(self, url: str):
         for root, dirs, _ in os.walk(self.src_dir):
-            if (root != self.src_dir) and (len(dirs) == 0):
+            if root != self.src_dir and len(dirs) == 0:
                 lambda_name = self.extract_lambda_name_from_top_dir(root)
                 code_path = self.extract_lambda_source_dir_from_top_dir(root)
                 code_hash = dirhash(root)
-                image = f"{repo_url}:{lambda_name}_{code_hash}"
+                image = f"{url}:{lambda_name}_{code_hash}"
 
                 # TODO: Probs want this path as a configuration object (within Universal)?
                 dockerfile = f"{os.getenv('CONFIG_REPO_PATH')}/src/Dockerfile"
 
-                # Build and push lambda Docker image to ecr
                 dockered_image = docker.Image(
-                    resource_name=f"{self.config.pipeline_name}_{lambda_name}_image",
+                    resource_name=f"{self.pipeline_name}_{lambda_name}_image",
                     build=docker.DockerBuildArgs(
                         dockerfile=dockerfile,
                         platform="linux/amd64",
                         args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
                         builder_version="BuilderBuildKit",
+                        # TODO: Do we get this from envs or config?
                         context=os.getenv("CONFIG_REPO_PATH"),
                         cache_from=docker.CacheFromArgs(images=[image]),
                     ),
                     image_name=image,
                     skip_push=False,
                     registry=docker.RegistryArgs(
-                        server=repo_url,
+                        server=url,
                         password=self.registry_info.password,
                         username=self.registry_info.user_name,
                     ),
-                    opts=ResourceOptions(provider=self.aws_provider),
+                    opts=ResourceOptions(self.aws_provider),
                 )
 
-                # Create lambda function from Docker image
-                function = CreatePipelineLambda(
-                    self.aws_provider, self.universal_stack_reference, lambda_name, root
-                ).apply(lambda_role, dockered_image)
+                lambda_ = CreatePipelineLambdaFunction(
+                    self.config, self.aws_provider, self.lambda_role, lambda_name
+                )
+                function = lambda_.apply(dockered_image)
                 self.created_lambdas[lambda_name] = function
 
-    def apply_ecr_repo(self):
-        self.ecr_repo = CreateECRRepo(
-            self.aws_provider, self.project, self.config.pipeline_name
-        )
-        self.ecr_repo.apply()
-
     def apply_state_machine(self):
-        state_machine_role = self.universal_stack_reference.get_output(
-            "state_function_role_arn"
+        state_machine_creator = CreatePipelineStateMachine(
+            self.config,
+            self.aws_provider,
+            self.pipeline_definition,
+            self.created_lambdas,
+            self.state_machine_role,
         )
-        self.state_machine = CreatePipelineStateMachine(
-            self.aws_provider, self.project, self.created_lambdas, self.config
-        )
-        self.state_machine.apply(state_machine_role)
+        self.state_machine = state_machine_creator.apply()
 
     def apply_cloudwatch_state_machine_trigger(self):
-        trigger_config = self.config.cloudwatch_trigger
+        trigger_config = self.pipeline_definition.cloudwatch_trigger
         self.event_bridge_rule = CreateEventBridgeRule(
-            self.aws_provider, self.project, trigger_config
+            self.config, self.aws_provider, trigger_config
         )
-        self.event_bridge_rule.apply()
+        event_rule = self.event_bridge_rule.apply()
         self.event_bridge_target = CreateEventBridgeTarget(
+            self.config,
             self.aws_provider,
-            self.universal_stack_reference,
-            f"{self.config.pipeline_name}-cloudevent-trigger-target",
-            self.event_bridge_rule.get_event_bridge_name(),
-            self.state_machine.get_state_machine_arn(),
+            self.pipeline_definition,
+            event_rule.name,
+            self.state_machine,
+            self.cloudevent_trigger_role,
         )
         self.event_bridge_target.apply()
 
     def authenticate_to_ecr_repo(self):
-        self.registry_info = self.ecr_repo.get_repo_registry_id().apply(
-            lambda registry_id: aws.ecr.get_authorization_token(registry_id=registry_id)
+        ecr_repo_id_output = self.universal_stack_reference.get_output(
+            f"ecr_repository_{self.pipeline_name}_id"
         )
-
-    def add_function_to_created_lambdas(self, lambda_name, function):
-        self.created_lambdas[lambda_name] = function
+        self.registry_info = ecr_repo_id_output.apply(
+            lambda id: aws.ecr.get_authorization_token(registry_id=id)
+        )
 
     def extract_lambda_name_from_top_dir(self, root_dir: str) -> str:
         # TODO: Alot of this is hardcoded and is dependant on the folder structure

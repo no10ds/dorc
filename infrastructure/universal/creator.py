@@ -1,43 +1,28 @@
-from pydantic import ValidationError
-from pulumi import Output, ResourceOptions
-import pulumi
-import pulumi_aws as aws
+import os
+import glob
 
-from utils.tagging import register_default_tags
-from utils.exceptions import InvalidConfigException
-from utils.provider import create_aws_provider
-from infrastructure.universal.config import Config
-from infrastructure.universal.iam import CreateIAM
+from infrastructure.universal.ecr import CreateEcrResource
+from utils.abstracts import InfrastructureCreateBlock
+from utils.config import UniversalConfig
 
 
-class CreateUniversalPipelineInfrastructure:
-    def __init__(self, config: dict | Config) -> None:
-        try:
-            if isinstance(config, dict):
-                self.config = Config.parse_obj(config)
-            else:
-                self.config = config
-        except ValidationError as e:
-            # TODO: Probably want a custom error here
-            raise InvalidConfigException(str(e))
+class CreateUniversal(InfrastructureCreateBlock):
+    def __init__(self, config: UniversalConfig) -> None:
+        super().__init__(config)
+        self.repo_list = self.retrieve_repo_list_from_folders()
 
-        register_default_tags(self.config.tags)
-        self.aws_provider = create_aws_provider(self.config.region)
+    def retrieve_repo_list_from_folders(self) -> list[str]:
+        source_path = f"{self.config.config_repo_path}/{self.config.source_code_path}"
+        return [
+            dirpath.replace(source_path, "").strip("/").replace("/", "-")
+            for dirpath in glob.glob(os.path.join(source_path, "*", "*"))
+            if os.path.isdir(dirpath)
+        ]
 
-    def apply(self) -> None:
-        aws.cloudwatch.LogGroup(
-            f"{self.config.project}-pipelines-log-group",
-            name=f"{self.config.project}-pipelines-log-group",
-            opts=ResourceOptions(
-                provider=self.aws_provider, delete_before_replace=True
-            ),
-        )
-
-        CreateIAM(self.aws_provider, self.config).apply()
-
-        self.export()
-
-    def export(self) -> None:
-        config_export: dict = dict(self.config)
-        for key, value in config_export.items():
-            pulumi.export(key, value)
+    def apply(self):
+        for repo in self.repo_list:
+            create_ecr_resource = CreateEcrResource(
+                self.config, self.aws_provider, repo
+            )
+            create_ecr_resource.apply()
+            create_ecr_resource.export()
