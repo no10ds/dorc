@@ -87,7 +87,7 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
 
         # TODO: Define this comment in the wider configuration passed into class
         return f"""{{
-            "Comment": "Example state machine function",
+            "Comment": "{self.pipeline_definition.description}",
             "StartAt": "{start_function_name}",
             "States": {json.dumps(states_map)}
         }}"""
