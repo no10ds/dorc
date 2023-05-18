@@ -13,7 +13,6 @@ class UniversalConfig(BaseModel):
 
 class Config(BaseModel):
     universal: UniversalConfig
-    environment: str
     vpc_id: Output[str] | str
     private_subnet_ids: Output[list[str]] | list[str]
 
