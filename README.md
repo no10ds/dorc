@@ -14,3 +14,7 @@ INFRA_STACK_NAME=infra
 
 PULUMI_CONFIG_PASSPHRASE=
 ```
+
+## Installing all required in `.venv`
+
+You need to cd into `10ds-core-pipelines-config` and when in the `.venv` you need to install `pip install -e .` to install the `10ds-core-pipelines-config` repo into the venv. This will allow for the custom create config functions to be found.
