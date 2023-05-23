@@ -1,9 +1,10 @@
 import pulumi
 import pulumi_aws as aws
 
+from typing import Optional
 from pulumi import ResourceOptions, Output
 from pulumi_aws import Provider
-from pulumi_aws.iam import Role
+from pulumi_aws.iam import Role, RolePolicyAttachment
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
 from utils.constants import (
@@ -18,6 +19,12 @@ class CreateIamResource(CreateResourceBlock):
         lambda_function_role: Role
         state_function_role: Role
         cloudevent_state_machine_trigger_role: Role
+
+        additional_lambda_role_policy: Optional[RolePolicyAttachment]
+        additional_state_function_role_policy: Optional[RolePolicyAttachment]
+        additional_cloudevent_state_machine_trigger_role_policy: Optional[
+            RolePolicyAttachment
+        ]
 
     def __init__(
         self, config: Config, aws_provider: Provider, environment: str
@@ -39,25 +46,31 @@ class CreateIamResource(CreateResourceBlock):
             cloudevent_state_machine_trigger_role.id
         )
 
-        if self.config.additional_lambda_role_policy_arn is not None:
-            self.apply_additional_lambda_role_policy(lambda_function_role)
-
-        if self.config.additional_state_function_role_policy_arn is not None:
-            self.apply_additional_state_function_role_policy(state_function_role)
-
-        if (
-            self.config.additional_cloudevent_state_machine_trigger_role_policy_arn
-            is not None
-        ):
-            self.apply_additional_cloudevent_state_machine_trigger_role_policy(
-                state_function_role
-            )
-
         output = self.Output(
             lambda_function_role=lambda_function_role,
             state_function_role=state_function_role,
             cloudevent_state_machine_trigger_role=cloudevent_state_machine_trigger_role,
         )
+
+        if self.config.additional_lambda_role_policy_arn is not None:
+            output.additional_lambda_role_policy = (
+                self.apply_additional_lambda_role_policy(lambda_function_role)
+            )
+
+        if self.config.additional_state_function_role_policy_arn is not None:
+            output.additional_state_function_role_policy = (
+                self.apply_additional_state_function_role_policy(state_function_role)
+            )
+
+        if (
+            self.config.additional_cloudevent_state_machine_trigger_role_policy_arn
+            is not None
+        ):
+            output.additional_cloudevent_state_machine_trigger_role_policy = (
+                self.apply_additional_cloudevent_state_machine_trigger_role_policy(
+                    state_function_role
+                )
+            )
 
         return output
 
@@ -218,9 +231,9 @@ class CreateIamResource(CreateResourceBlock):
         )
 
     def apply_additional_lambda_role_policy(self, lambda_function_role: Role):
-        name = f"{self.project}-{self.environment}-additional-lambda-role-policy-attachment"
+        name = f"{self.project}-{self.environment}-additional-lambda-attachment"
         policy_arn = self.to_output(self.config.additional_lambda_role_policy_arn)
-        aws.iam.RolePolicyAttachment(
+        return aws.iam.RolePolicyAttachment(
             resource_name=name,
             policy_arn=policy_arn,
             role=lambda_function_role.name,
@@ -228,11 +241,11 @@ class CreateIamResource(CreateResourceBlock):
         )
 
     def apply_additional_state_function_role_policy(self, state_function_role: Role):
-        name = f"{self.project}-{self.environment}-additional-sf-role-policy-attachment"
+        name = f"{self.project}-{self.environment}-additional-sf-attachment"
         policy_arn = self.to_output(
             self.config.additional_state_function_role_policy_arn
         )
-        aws.iam.RolePolicyAttachment(
+        return aws.iam.RolePolicyAttachment(
             resource_name=name,
             policy_arn=policy_arn,
             role=state_function_role.name,
@@ -242,11 +255,11 @@ class CreateIamResource(CreateResourceBlock):
     def apply_additional_cloudevent_state_machine_trigger_role_policy(
         self, state_function_role: Role
     ):
-        name = f"{self.project}-{self.environment}-additional-cloudevent-sm-trigger-role-policy-attachment"
+        name = f"{self.project}-{self.environment}-additional-cloudevent-sm-trigger-attachment"
         policy_arn = self.to_output(
             self.config.additional_cloudevent_state_machine_trigger_role_policy_arn
         )
-        aws.iam.RolePolicyAttachment(
+        return aws.iam.RolePolicyAttachment(
             resource_name=name,
             policy_arn=policy_arn,
             role=state_function_role.name,
