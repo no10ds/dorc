@@ -170,7 +170,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.pipeline_definition,
             self.cloudevent_bridge_rule.outputs.cloudwatch_event_rule.name,
             self.cloudevent_trigger_role_arn,
-            state_machine_outputs,
+            state_machine_outputs.state_machine.arn,
         )
         cloudevent_bridge_target.exec()
 

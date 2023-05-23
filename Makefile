@@ -1,7 +1,7 @@
 -include .env
 export
 
-PYTHON_VERSION=3.10.6
+PYTHON_VERSION=3.11.0
 
 python-setup:
 	pyenv install --skip-existing $(PYTHON_VERSION)

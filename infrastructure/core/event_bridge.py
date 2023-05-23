@@ -57,13 +57,13 @@ class CreateEventBridgeTarget(CreateResourceBlock):
         pipeline_definition: PipelineDefinition,
         event_bridge_rule_name: str,
         cloudevent_trigger_role_arn,
-        state_machine_outputs,
+        state_machine_arn,
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.pipeline_name = pipeline_name
         self.pipeline_definition = pipeline_definition
         self.event_bridge_rule_name = event_bridge_rule_name
-        self.state_machine_outputs = state_machine_outputs
+        self.state_machine_arn = state_machine_arn
         self.cloudevent_trigger_role_arn = cloudevent_trigger_role_arn
         self.project = self.config.project
 
@@ -72,7 +72,7 @@ class CreateEventBridgeTarget(CreateResourceBlock):
         cloudwatch_event_target = aws.cloudwatch.EventTarget(
             resource_name=name,
             rule=self.event_bridge_rule_name,
-            arn=self.state_machine_outputs.state_machine.arn,
+            arn=self.state_machine_arn,
             role_arn=self.cloudevent_trigger_role_arn,
             opts=ResourceOptions(provider=self.aws_provider),
         )
