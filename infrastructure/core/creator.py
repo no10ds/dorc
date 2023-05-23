@@ -16,7 +16,7 @@ from infrastructure.core.event_bridge import (
 from infrastructure.core.lambda_ import CreatePipelineLambdaFunction
 from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.models.definition import PipelineDefinition
-from utils.abstracts import InfrastructureCreateBlock
+from utils.abstracts import CreateInfrastructureBlock
 from utils.config import Config
 from utils.constants import (
     LAMBDA_ROLE_ARN,
@@ -26,7 +26,7 @@ from utils.constants import (
 from utils.exceptions import InvalidPipelineDefinitionException
 
 
-class CreatePipeline(InfrastructureCreateBlock):
+class CreatePipeline(CreateInfrastructureBlock):
     def __init__(
         self, config: Config, pipeline_definition: dict | PipelineDefinition
     ) -> None:
@@ -62,6 +62,14 @@ class CreatePipeline(InfrastructureCreateBlock):
         self.created_lambdas = {}
         self.create_source_directory()
 
+        # Create infrastructure resource block creators
+        self.cloudevent_bridge_rule = CreateEventBridgeRule(
+            self.config,
+            self.aws_provider,
+            self.environment,
+            self.pipeline_definition.cloudwatch_trigger,
+        )
+
     def create_source_directory(self):
         top_dir = os.path.dirname(self.pipeline_definition.file_path)
         self.src_dir = os.path.abspath(
@@ -77,8 +85,10 @@ class CreatePipeline(InfrastructureCreateBlock):
 
         ecr_repo_url_output.apply(
             lambda url: self.build_and_deploy_folder_structure_functions(url)
-        ).apply(lambda _: self.apply_state_machine()).apply(
-            lambda _: self.apply_cloudwatch_state_machine_trigger()
+        ).apply(lambda _: self.apply_state_machine().apply()).apply(
+            lambda state_machine_outputs: self.apply_cloudwatch_state_machine_trigger(
+                state_machine_outputs
+            )
             if self.pipeline_definition.cloudwatch_trigger is not None
             else None
         )
@@ -88,9 +98,11 @@ class CreatePipeline(InfrastructureCreateBlock):
             if root != self.src_dir and len(dirs) == 0:
                 lambda_name = self.extract_lambda_name_from_top_dir(root)
                 image = self.apply_docker_image_build_and_push(url, lambda_name, root)
-                function = self.apply_lambda_function(lambda_name, image)
+                lambda_function = self.apply_lambda_function(lambda_name, image)
 
-                self.created_lambdas[lambda_name] = function
+                self.created_lambdas[
+                    lambda_name
+                ] = lambda_function.outputs.lambda_function
 
     def apply_docker_image_build_and_push(
         self, url: str, lambda_name: str, root: str
@@ -123,18 +135,20 @@ class CreatePipeline(InfrastructureCreateBlock):
             opts=ResourceOptions(self.aws_provider),
         )
 
-    def apply_lambda_function(self, lambda_name: str, image: Image):
-        lambda_ = CreatePipelineLambdaFunction(
+    def apply_lambda_function(
+        self, lambda_name: str, image: Image
+    ) -> CreatePipelineLambdaFunction:
+        return CreatePipelineLambdaFunction(
             self.config,
             self.aws_provider,
             self.environment,
             self.lambda_role_arn,
             lambda_name,
+            image,
         )
-        return lambda_.apply(image)
 
     def apply_state_machine(self):
-        state_machine_creator = CreatePipelineStateMachine(
+        return CreatePipelineStateMachine(
             self.config,
             self.aws_provider,
             self.environment,
@@ -143,25 +157,22 @@ class CreatePipeline(InfrastructureCreateBlock):
             self.created_lambdas,
             self.state_machine_role_arn,
         )
-        self.state_machine = state_machine_creator.apply()
 
-    def apply_cloudwatch_state_machine_trigger(self):
-        trigger_config = self.pipeline_definition.cloudwatch_trigger
-        self.event_bridge_rule = CreateEventBridgeRule(
-            self.config, self.aws_provider, self.environment, trigger_config
-        )
-        event_rule = self.event_bridge_rule.apply()
-        self.event_bridge_target = CreateEventBridgeTarget(
+    def apply_cloudwatch_state_machine_trigger(
+        self, state_machine_outputs: CreatePipelineStateMachine.Output
+    ):
+        self.cloudevent_bridge_rule.exec()
+        cloudevent_bridge_target = CreateEventBridgeTarget(
             self.config,
             self.aws_provider,
             self.environment,
             self.pipeline_name,
             self.pipeline_definition,
-            event_rule.name,
-            self.state_machine,
+            self.cloudevent_bridge_rule.outputs.cloudwatch_event_rule.name,
             self.cloudevent_trigger_role_arn,
+            state_machine_outputs,
         )
-        self.event_bridge_target.apply()
+        cloudevent_bridge_target.exec()
 
     def authenticate_to_ecr_repo(self):
         ecr_repo_id_output = self.universal_stack_reference.get_output(
@@ -181,7 +192,6 @@ class CreatePipeline(InfrastructureCreateBlock):
     def extract_lambda_source_dir_from_top_dir(self, root_dir: str) -> str:
         # TODO: Alot of this is hardcoded and is dependant on the folder structure
         # being exactly what we currently have defined
-        directory = root_dir.replace("/src", "")
         splits = root_dir.split("/")
         return f"{splits[-5]}/{splits[-4]}/{splits[-3]}/{splits[-2]}/{splits[-1]}"
 

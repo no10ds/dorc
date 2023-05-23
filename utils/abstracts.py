@@ -1,6 +1,8 @@
 import pulumi
 
+from typing import Type
 from abc import ABC, abstractmethod
+from pydantic import BaseModel
 from pulumi_aws import Provider
 
 from utils.exceptions import EnvironmentRequiredException
@@ -9,7 +11,7 @@ from utils.tagging import register_default_tags
 from utils.provider import create_aws_provider
 
 
-class InfrastructureCreateBlock(ABC):
+class CreateInfrastructureBlock(ABC):
     def __init__(
         self, config: Config | UniversalConfig, skip_environment_check: bool = False
     ) -> None:
@@ -31,19 +33,46 @@ class InfrastructureCreateBlock(ABC):
         pass
 
 
-class ResourceCreateBlock(ABC):
+class CreateResourceBlock(ABC):
+    class Output(BaseModel):
+        class Config:
+            arbitrary_types_allowed = True
+
     def __init__(
         self,
         config: Config | UniversalConfig,
         aws_provider: Provider,
-        environment: str
-        | None = None,  # TODO: Is passing the environment here the best option?
-    ) -> None:
+        environment: str | None = None,
+    ):
         super().__init__()
         self.config = config
         self.aws_provider = aws_provider
         self.environment = environment
+        self._outputs: self.Output = None
 
     @abstractmethod
     def apply(self):
+        # Creates the infrastructure and sets the Output
         pass
+
+    @abstractmethod
+    def export(self):
+        # Export the outputs to Pulumi
+        pass
+
+    @property
+    def outputs(self) -> Output:
+        # Return the output from this pipeline
+        if not self._outputs:
+            self.exec()
+
+        return self._outputs
+
+    @outputs.setter
+    def outputs(self, outputs: Output):
+        if not isinstance(outputs, self.Output):
+            raise ValueError("Not a valid Outputs instance")
+        self._outputs = outputs
+
+    def exec(self):
+        self.outputs = self.apply()

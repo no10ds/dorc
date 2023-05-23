@@ -3,7 +3,8 @@ import pulumi_aws as aws
 
 from pulumi import ResourceOptions, Output
 from pulumi_aws import Provider
-from utils.abstracts import ResourceCreateBlock
+from pulumi_aws.iam import Role
+from utils.abstracts import CreateResourceBlock
 from utils.config import Config
 from utils.constants import (
     STATE_FUNCTION_ROLE_ARN,
@@ -12,20 +13,31 @@ from utils.constants import (
 )
 
 
-class CreateIamResource(ResourceCreateBlock):
+class CreateIamResource(CreateResourceBlock):
+    class Output(CreateResourceBlock.Output):
+        lambda_function_role: Role
+        state_function_role: Role
+        cloudevent_state_machine_trigger_role: Role
+
     def __init__(
-        self, config: Config, aws_provider: Provider, environment: str | None
+        self, config: Config, aws_provider: Provider, environment: str
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.project = self.config.project
 
-    def apply(self):
-        self.create_lambda_function_role()
-        self.create_lambda_function_role_policy()
-        self.create_state_function_role()
-        self.create_state_function_role_policy()
-        self.create_cloudevent_state_machine_trigger_role()
-        self.create_cloudevent_state_machine_trigger_role_policy()
+    def apply(self) -> Output:
+        lambda_function_role = self.create_lambda_function_role()
+        self.create_lambda_function_role_policy(lambda_function_role.id)
+
+        state_function_role = self.create_state_function_role()
+        self.create_state_function_role_policy(state_function_role.id)
+
+        cloudevent_state_machine_trigger_role = (
+            self.create_cloudevent_state_machine_trigger_role()
+        )
+        self.create_cloudevent_state_machine_trigger_role_policy(
+            cloudevent_state_machine_trigger_role.id
+        )
 
         if self.config.additional_lambda_role_policy_arn is not None:
             self.apply_additional_lambda_role_policy()
@@ -39,9 +51,78 @@ class CreateIamResource(ResourceCreateBlock):
         ):
             self.apply_additional_cloudevent_state_machine_trigger_role_policy()
 
+        output = self.Output(
+            lambda_function_role=lambda_function_role,
+            state_function_role=state_function_role,
+            cloudevent_state_machine_trigger_role=cloudevent_state_machine_trigger_role,
+        )
+
+        return output
+
+    def export(self):
+        pulumi.export(LAMBDA_ROLE_ARN, self.outputs.lambda_function_role.arn)
+        pulumi.export(STATE_FUNCTION_ROLE_ARN, self.outputs.state_function_role.arn)
+        pulumi.export(
+            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
+            self.outputs.cloudevent_state_machine_trigger_role.arn,
+        )
+
+    def create_lambda_function_role(self):
+        name = f"{self.project}-{self.environment}-lambda-role"
+        return aws.iam.Role(
+            resource_name=name,
+            name=name,
+            assume_role_policy="""{
+                "Version": "2012-10-17",
+                "Statement": [
+                    {
+                        "Action": "sts:AssumeRole",
+                        "Principal": {
+                            "Service": "lambda.amazonaws.com"
+                        },
+                        "Effect": "Allow",
+                        "Sid": ""
+                    }
+                ]
+            }""",
+            opts=ResourceOptions(provider=self.aws_provider),
+        )
+
+    def create_lambda_function_role_policy(self, lambda_function_role_id):
+        name = f"{self.project}-{self.environment}-lambda-role-policy"
+        return aws.iam.RolePolicy(
+            resource_name=name,
+            name=name,
+            role=lambda_function_role_id,
+            policy="""{
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "logs:CreateLogGroup",
+                                "logs:CreateLogStream",
+                                "logs:PutLogEvents"
+                            ],
+                            "Resource": "arn:aws:logs:*:*:*"
+                        },
+                        {
+                            "Effect": "Allow",
+                            "Action": [
+                                "ec2:CreateNetworkInterface",
+                                "ec2:DescribeNetworkInterfaces",
+                                "ec2:DeleteNetworkInterface"
+                            ],
+                            "Resource": "*"
+                        }
+                    ]
+                }""",
+            opts=ResourceOptions(provider=self.aws_provider),
+        )
+
     def create_state_function_role(self):
         name = f"{self.project}-{self.environment}-state-function-role"
-        self.state_function_role = aws.iam.Role(
+        return aws.iam.Role(
             resource_name=name,
             name=name,
             assume_role_policy="""{
@@ -58,14 +139,13 @@ class CreateIamResource(ResourceCreateBlock):
                 }""",
             opts=ResourceOptions(provider=self.aws_provider),
         )
-        pulumi.export(STATE_FUNCTION_ROLE_ARN, self.state_function_role.arn)
 
-    def create_state_function_role_policy(self):
+    def create_state_function_role_policy(self, state_function_role_id):
         name = f"{self.project}-{self.environment}-state-function-role-policy"
-        self.state_function_role_policy = aws.iam.RolePolicy(
+        return aws.iam.RolePolicy(
             resource_name=name,
             name=name,
-            role=self.state_function_role.id,
+            role=state_function_role_id,
             policy="""{
                 "Version": "2012-10-17",
                 "Statement": [
@@ -93,63 +173,9 @@ class CreateIamResource(ResourceCreateBlock):
             opts=ResourceOptions(provider=self.aws_provider),
         )
 
-    def create_lambda_function_role(self):
-        name = f"{self.project}-{self.environment}-lambda-role"
-        self.lambda_function_role = aws.iam.Role(
-            resource_name=name,
-            name=name,
-            assume_role_policy="""{
-                "Version": "2012-10-17",
-                "Statement": [
-                    {
-                        "Action": "sts:AssumeRole",
-                        "Principal": {
-                            "Service": "lambda.amazonaws.com"
-                        },
-                        "Effect": "Allow",
-                        "Sid": ""
-                    }
-                ]
-            }""",
-            opts=ResourceOptions(provider=self.aws_provider),
-        )
-        pulumi.export(LAMBDA_ROLE_ARN, self.lambda_function_role.arn)
-
-    def create_lambda_function_role_policy(self):
-        name = f"{self.project}-{self.environment}-lambda-role-policy"
-        self.lambda_function_role_policy = aws.iam.RolePolicy(
-            resource_name=name,
-            name=name,
-            role=self.lambda_function_role.id,
-            policy="""{
-                    "Version": "2012-10-17",
-                    "Statement": [
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "logs:CreateLogGroup",
-                                "logs:CreateLogStream",
-                                "logs:PutLogEvents"
-                            ],
-                            "Resource": "arn:aws:logs:*:*:*"
-                        },
-                        {
-                            "Effect": "Allow",
-                            "Action": [
-                                "ec2:CreateNetworkInterface",
-                                "ec2:DescribeNetworkInterfaces",
-                                "ec2:DeleteNetworkInterface"
-                            ],
-                            "Resource": "*"
-                        }
-                    ]
-                }""",
-            opts=ResourceOptions(provider=self.aws_provider),
-        )
-
     def create_cloudevent_state_machine_trigger_role(self):
         name = f"{self.project}-{self.environment}-cloudevent-sm-trigger-role"
-        self.cloudevent_state_machine_trigger_role = aws.iam.Role(
+        return aws.iam.Role(
             resource_name=name,
             name=name,
             assume_role_policy="""{
@@ -167,17 +193,15 @@ class CreateIamResource(ResourceCreateBlock):
             }""",
             opts=ResourceOptions(provider=self.aws_provider),
         )
-        pulumi.export(
-            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
-            self.cloudevent_state_machine_trigger_role.arn,
-        )
 
-    def create_cloudevent_state_machine_trigger_role_policy(self):
+    def create_cloudevent_state_machine_trigger_role_policy(
+        self, cloudevent_state_machine_trigger_role_id
+    ):
         name = f"{self.project}-{self.environment}-cloudevent-sm-trigger-policy"
-        self.cloudevent_state_machine_trigger_role_policy = aws.iam.RolePolicy(
+        return aws.iam.RolePolicy(
             resource_name=name,
             name=name,
-            role=self.cloudevent_state_machine_trigger_role.id,
+            role=cloudevent_state_machine_trigger_role_id,
             policy="""{
                 "Version": "2012-10-17",
                 "Statement": [{

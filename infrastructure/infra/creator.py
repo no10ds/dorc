@@ -1,9 +1,9 @@
 from infrastructure.infra.iam import CreateIamResource
-from utils.abstracts import InfrastructureCreateBlock
+from utils.abstracts import CreateInfrastructureBlock
 from utils.config import Config
 
 
-class CreateInfra(InfrastructureCreateBlock):
+class CreateInfra(CreateInfrastructureBlock):
     def __init__(self, config: Config) -> None:
         super().__init__(config)
         self.create_iam_resource = CreateIamResource(
@@ -11,4 +11,5 @@ class CreateInfra(InfrastructureCreateBlock):
         )
 
     def apply(self):
-        self.create_iam_resource.apply()
+        self.create_iam_resource.exec()
+        self.create_iam_resource.export()

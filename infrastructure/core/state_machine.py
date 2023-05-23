@@ -5,6 +5,7 @@ import pulumi_aws as aws
 
 from pulumi import ResourceOptions
 from pulumi_aws import Provider
+from pulumi_aws.sfn import StateMachine
 
 from infrastructure.core.models.definition import (
     PipelineDefinition,
@@ -12,11 +13,14 @@ from infrastructure.core.models.definition import (
     NextFunctionTypes,
 )
 
-from utils.abstracts import ResourceCreateBlock
+from utils.abstracts import CreateResourceBlock
 from utils.config import Config
 
 
-class CreatePipelineStateMachine(ResourceCreateBlock):
+class CreatePipelineStateMachine(CreateResourceBlock):
+    class Output(CreateResourceBlock.Output):
+        state_machine: StateMachine
+
     def __init__(
         self,
         config: Config,
@@ -34,19 +38,21 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
         self.state_machine_role = state_machine_role
         self.project = self.config.project
 
-    def apply(self):
+    def apply(self) -> Output:
         state_machine_definition = pulumi.Output.all(
             [value.arn for value in self.lambdas_dict.values()]
         ).apply(lambda arns: self.create_state_machine_definition(arns))
 
         name = f"{self.project}-{self.environment}-{self.pipeline_name}"
-        return aws.sfn.StateMachine(
+        state_machine = aws.sfn.StateMachine(
             resource_name=name,
             name=name,
             role_arn=self.state_machine_role,
             definition=state_machine_definition,
             opts=ResourceOptions(provider=self.aws_provider),
         )
+
+        return self.Output(state_machine=state_machine)
 
     def create_state_machine_definition(self, arns: list):
         lambda_names = self.lambdas_dict.keys()
@@ -118,3 +124,6 @@ class CreatePipelineStateMachine(ResourceCreateBlock):
 
     def create_function_name(self, name) -> str:
         return f"{self.pipeline_name}_{name}".replace("-", "_")
+
+    def export(self):
+        pass

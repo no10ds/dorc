@@ -2,11 +2,11 @@ import os
 import glob
 
 from infrastructure.universal.ecr import CreateEcrResource
-from utils.abstracts import InfrastructureCreateBlock
+from utils.abstracts import CreateInfrastructureBlock
 from utils.config import UniversalConfig
 
 
-class CreateUniversal(InfrastructureCreateBlock):
+class CreateUniversal(CreateInfrastructureBlock):
     def __init__(self, config: UniversalConfig) -> None:
         super().__init__(config, skip_environment_check=True)
         self.repo_list = self.retrieve_repo_list_from_folders()
@@ -24,5 +24,5 @@ class CreateUniversal(InfrastructureCreateBlock):
             create_ecr_resource = CreateEcrResource(
                 self.config, self.aws_provider, repo
             )
-            create_ecr_resource.apply()
+            create_ecr_resource.exec()
             create_ecr_resource.export()
