@@ -5,16 +5,14 @@ from pulumi_aws import Provider
 from pulumi_aws.ecr import Repository
 
 from utils.abstracts import CreateResourceBlock
-from utils.config import Config, UniversalConfig
+from utils.config import UniversalConfig
 
 
 class CreateEcrResource(CreateResourceBlock):
     class Output(CreateResourceBlock.Output):
         ecr_repo: Repository
 
-    def __init__(
-        self, config: Config | UniversalConfig, aws_provider: Provider, repo_name: str
-    ):
+    def __init__(self, config: UniversalConfig, aws_provider: Provider, repo_name: str):
         super().__init__(config, aws_provider)
         self.repo_name = repo_name
 

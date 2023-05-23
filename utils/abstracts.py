@@ -1,6 +1,5 @@
 import pulumi
 
-from typing import Type
 from abc import ABC, abstractmethod
 from pydantic import BaseModel
 from pulumi_aws import Provider
