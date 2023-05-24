@@ -33,6 +33,11 @@ class TestCreateLambda:
 
     @pytest.mark.usefixtures("lambda_resource_block")
     @pulumi.runtime.test
+    def test_instantiate_create_lambda_resource(self, lambda_resource_block):
+        assert lambda_resource_block.project == config.project
+
+    @pytest.mark.usefixtures("lambda_resource_block")
+    @pulumi.runtime.test
     def test_lambda_security_group_created(self, lambda_resource_block):
         def check_security_group_function(args):
             name, vpc_id, egress = args

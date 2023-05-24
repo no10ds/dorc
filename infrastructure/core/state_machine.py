@@ -54,7 +54,7 @@ class CreatePipelineStateMachine(CreateResourceBlock):
 
         return self.Output(state_machine=state_machine)
 
-    def create_state_machine_definition(self, arns: list):
+    def create_state_machine_definition(self, arns: list[list]):
         lambda_names = self.lambdas_dict.keys()
         name_to_arn_map = dict(zip(lambda_names, arns[0]))
 
@@ -98,7 +98,9 @@ class CreatePipelineStateMachine(CreateResourceBlock):
             "States": {json.dumps(states_map)}
         }}"""
 
-    def create_lambda_next_trigger_state(self, arn: str, next_function_name: str):
+    def create_lambda_next_trigger_state(
+        self, arn: str, next_function_name: str | None
+    ):
         _map = {"Type": "Task", "Resource": arn}
 
         if next_function_name is None:
