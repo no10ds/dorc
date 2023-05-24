@@ -2,7 +2,6 @@ import json
 import pytest
 import pulumi
 
-from pulumi import Output
 from pulumi_aws.lambda_ import Function as AwsFunction
 from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.creator import CreatePipeline

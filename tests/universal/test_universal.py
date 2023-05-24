@@ -12,6 +12,7 @@ class TestCreateUniversal:
         assert universal_block.config == universal_config
 
     def test_retrieve_repo_list_from_folders(self, mock_pulumi, mock_pulumi_config):
+        universal_config.source_code_path = "src"
         universal_block = CreateUniversal(universal_config)
         assert universal_block.repo_list == ["test-layer"]
 

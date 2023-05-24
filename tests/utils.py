@@ -1,3 +1,5 @@
+from pydantic import BaseModel
+
 from utils.config import UniversalConfig, Config
 from infrastructure.core.models.definition import (
     PipelineDefinition,
@@ -18,10 +20,15 @@ config = Config(
 )
 
 pipeline_definition = PipelineDefinition(
-    file_path=__file__,
+    file_path="./tests/mock_config_repo_src/src/test/layer/__main__.py",
     description="Test pipeline description",
     functions=[],
     cloudwatch_trigger=CloudwatchCronTrigger(
         name="test-pipeline-cron", cron="cron(0/6 * * * ? *)"
     ),
 )
+
+
+class MockedEcrAuthentication(BaseModel):
+    password: str
+    user_name: str

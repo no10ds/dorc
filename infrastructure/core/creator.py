@@ -49,18 +49,14 @@ class CreatePipeline(CreateInfrastructureBlock):
             f"{infra_stack_name}-{self.environment}"
         )
 
-        self.lambda_role_arn = self.infra_stack_reference.get_output(LAMBDA_ROLE_ARN)
-        self.state_machine_role_arn = self.infra_stack_reference.get_output(
-            STATE_FUNCTION_ROLE_ARN
-        )
-        self.cloudevent_trigger_role_arn = self.infra_stack_reference.get_output(
-            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
-        )
+        self.lambda_role_arn = self.get_lambda_role_arn()
+        self.state_machine_role_arn = self.get_state_machine_role_arn()
+        self.cloudevent_trigger_role_arn = self.get_cloudevent_trigger_role_arn()
 
         self.pipeline_name = self.generate_pipeline_name_from_directory()
 
         self.created_lambdas = {}
-        self.create_source_directory()
+        self.src_dir = self.create_source_directory()
 
         # Create infrastructure resource block creators
         self.cloudevent_bridge_rule = CreateEventBridgeRule(
@@ -70,11 +66,20 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.pipeline_definition.cloudwatch_trigger,
         )
 
+    def get_lambda_role_arn(self):
+        return self.infra_stack_reference.get_output(LAMBDA_ROLE_ARN)
+
+    def get_state_machine_role_arn(self):
+        return self.infra_stack_reference.get_output(STATE_FUNCTION_ROLE_ARN)
+
+    def get_cloudevent_trigger_role_arn(self):
+        return self.infra_stack_reference.get_output(
+            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
+        )
+
     def create_source_directory(self):
         top_dir = os.path.dirname(self.pipeline_definition.file_path)
-        self.src_dir = os.path.abspath(
-            os.path.join(top_dir, self.config.source_code_path)
-        )
+        return os.path.abspath(os.path.join(top_dir, self.config.source_code_path))
 
     def apply(self):
         self.authenticate_to_ecr_repo()
@@ -121,7 +126,6 @@ class CreatePipeline(CreateInfrastructureBlock):
                 platform="linux/amd64",
                 args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
                 builder_version="BuilderBuildKit",
-                # TODO: Do we get this from envs or config?
                 context=os.getenv("CONFIG_REPO_PATH"),
                 cache_from=docker.CacheFromArgs(images=[image]),
             ),
