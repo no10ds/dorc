@@ -17,7 +17,7 @@ class TestCreateEventBridgeRule:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     @pytest.fixture
@@ -30,7 +30,7 @@ class TestCreateEventBridgeRule:
             pipeline_infrastructure_block.environment,
             pipeline_infrastructure_block.pipeline_definition.cloudwatch_trigger,
         )
-        yield event_bridge_rule_resource_block
+        return event_bridge_rule_resource_block
 
     @pytest.mark.usefixtures("event_bridge_rule_resource_block")
     def test_instantiate_create_event_bridge_rule_resource(
@@ -99,7 +99,7 @@ class TestCreateEventBridgeTarget:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipelines_infrastructure_block")
     @pytest.fixture
@@ -116,7 +116,7 @@ class TestCreateEventBridgeTarget:
             "test:cloudwatch:role:arn",
             "test:state:machine:arn",
         )
-        yield event_bridge_target_resource_block
+        return event_bridge_target_resource_block
 
     @pytest.mark.usefixtures("event_bridge_target_resource_block")
     def test_instantiate_create_event_bridge_target_resource(

@@ -20,7 +20,7 @@ class TestCreateStateMachine:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     @pytest.fixture
@@ -36,7 +36,7 @@ class TestCreateStateMachine:
             {},
             "test:state-machine:role",
         )
-        yield state_machine_resource_block
+        return state_machine_resource_block
 
     @pytest.mark.usefixtures("state_machine_resource_block")
     def test_instantiate_create_state_machine_resource(

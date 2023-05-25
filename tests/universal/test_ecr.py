@@ -13,7 +13,7 @@ class TestCreateEcrResource:
     @pytest.fixture
     def universal_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         universal_infra_block = CreateUniversal(universal_config)
-        yield universal_infra_block
+        return universal_infra_block
 
     @pytest.mark.usefixtures("universal_infrastructure_block")
     @pytest.fixture
@@ -23,7 +23,7 @@ class TestCreateEcrResource:
             aws_provider=universal_infrastructure_block.aws_provider,
             repo_name="test-repo",
         )
-        yield ecr_resource_block
+        return ecr_resource_block
 
     @pytest.mark.usefixtures("ecr_resource_block")
     def test_instantiate_create_ecr_resource(self, ecr_resource_block):

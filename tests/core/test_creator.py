@@ -20,7 +20,7 @@ class TestCreatePipeline:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     def test_instantiate_pipeline_creator(self, pipeline_infrastructure_block):

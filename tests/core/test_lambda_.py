@@ -13,7 +13,7 @@ class TestCreateLambda:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     @pytest.fixture
@@ -29,7 +29,7 @@ class TestCreateLambda:
             "test-function",
             image,
         )
-        yield lambda_resource_block
+        return lambda_resource_block
 
     @pytest.mark.usefixtures("lambda_resource_block")
     @pulumi.runtime.test
@@ -66,7 +66,7 @@ class TestCreateLambda:
             assert name == "test-pipelines-test-test-function"
             assert role == "test:lambda:role"
             assert vpc == {
-                "security_group_ids": ["test-pipelines-test-test-function-sg_id"],
+                "security_group_ids": ["test-pipelines-test-test-function-sg"],
                 "subnet_ids": config.private_subnet_ids,
             }
 
