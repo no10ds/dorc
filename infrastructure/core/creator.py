@@ -13,9 +13,10 @@ from infrastructure.core.event_bridge import (
     CreateEventBridgeRule,
     CreateEventBridgeTarget,
 )
-from infrastructure.core.lambda_ import CreatePipelineLambdaFunction
+from infrastructure.core._lambda import CreatePipelineLambdaFunction
 from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.models.definition import PipelineDefinition
+from infrastructure.universal.ecr import CreateEcrResource
 from utils.abstracts import CreateInfrastructureBlock
 from utils.config import Config
 from utils.constants import (
@@ -43,24 +44,27 @@ class CreatePipeline(CreateInfrastructureBlock):
             raise InvalidPipelineDefinitionException(str(exception))
 
         universal_stack_name = os.getenv("UNIVERSAL_STACK_NAME", "universal")
-        infra_stack_name = os.getenv("INFRA_STACK_NAME", "infra")
-        self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
-        self.infra_stack_reference = pulumi.StackReference(
-            f"{infra_stack_name}-{self.environment}"
+        infra_stack_name = (
+            f"{os.getenv('INFRA_STACK_NAME', 'infra')}-{self.environment}"
         )
 
-        self.lambda_role_arn = self.infra_stack_reference.get_output(LAMBDA_ROLE_ARN)
-        self.state_machine_role_arn = self.infra_stack_reference.get_output(
+        self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
+        self.infra_stack_reference = pulumi.StackReference(infra_stack_name)
+
+        self.lambda_role_arn = self.infra_stack_reference.require_output(
+            LAMBDA_ROLE_ARN
+        )
+        self.state_machine_role_arn = self.infra_stack_reference.require_output(
             STATE_FUNCTION_ROLE_ARN
         )
-        self.cloudevent_trigger_role_arn = self.infra_stack_reference.get_output(
+        self.cloudevent_trigger_role_arn = self.infra_stack_reference.require_output(
             CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
         )
 
         self.pipeline_name = self.generate_pipeline_name_from_directory()
 
         self.created_lambdas = {}
-        self.create_source_directory()
+        self.src_dir = self.fetch_source_directory_name()
 
         # Create infrastructure resource block creators
         self.cloudevent_bridge_rule = CreateEventBridgeRule(
@@ -70,17 +74,14 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.pipeline_definition.cloudwatch_trigger,
         )
 
-    def create_source_directory(self):
+    def fetch_source_directory_name(self):
         top_dir = os.path.dirname(self.pipeline_definition.file_path)
-        self.src_dir = os.path.abspath(
-            os.path.join(top_dir, self.config.source_code_path)
-        )
+        return os.path.abspath(os.path.join(top_dir, self.config.source_code_path))
 
     def apply(self):
         self.authenticate_to_ecr_repo()
-
-        ecr_repo_url_output = self.universal_stack_reference.get_output(
-            f"ecr_repository_{self.pipeline_name}_url"
+        ecr_repo_url_output = self.universal_stack_reference.require_output(
+            CreateEcrResource.create_repository_url_export_key(self.pipeline_name)
         )
 
         ecr_repo_url_output.apply(

@@ -32,9 +32,9 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
 
     def apply(self) -> Output:
         security_group = self.create_lambda_security_group()
-        lambda_ = self.create_lambda(security_group)
+        _lambda = self.create_lambda(security_group)
 
-        return self.Output(security_group=security_group, lambda_function=lambda_)
+        return self.Output(security_group=security_group, lambda_function=_lambda)
 
     def create_lambda_security_group(self):
         name = f"{self.project}-{self.environment}-{self.function_name}-sg"
