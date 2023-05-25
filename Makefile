@@ -1,7 +1,7 @@
 -include .env
 export
 
-PYTHON_VERSION=3.10.6
+PYTHON_VERSION=3.11.0
 
 python-setup:
 	pyenv install --skip-existing $(PYTHON_VERSION)
@@ -47,3 +47,6 @@ else
 	make infra/set-stack stack=$(instance)-$(layer)-$(env) dir=$(DIR)
 	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.$(env).yaml $(ARGS)
 endif
+
+test:
+	pytest -s -vv --disable-warnings

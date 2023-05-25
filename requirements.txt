@@ -7,3 +7,6 @@ pydantic
 gitpython
 checksumdir
 typeguard
+pytest
+pytest-cov
+mock

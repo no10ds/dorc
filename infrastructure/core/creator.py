@@ -54,12 +54,10 @@ class CreatePipeline(CreateInfrastructureBlock):
         self.lambda_role_arn = self.infra_stack_reference.require_output(
             LAMBDA_ROLE_ARN
         )
-        self.state_machine_role_arn = self.infra_stack_reference.require_output(
-            STATE_FUNCTION_ROLE_ARN
-        )
-        self.cloudevent_trigger_role_arn = self.infra_stack_reference.require_output(
-            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
-        )
+
+        self.lambda_role_arn = self.get_lambda_role_arn()
+        self.state_machine_role_arn = self.get_state_machine_role_arn()
+        self.cloudevent_trigger_role_arn = self.get_cloudevent_trigger_role_arn()
 
         self.pipeline_name = self.generate_pipeline_name_from_directory()
 
@@ -72,6 +70,17 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.aws_provider,
             self.environment,
             self.pipeline_definition.cloudwatch_trigger,
+        )
+
+    def get_lambda_role_arn(self):
+        return self.infra_stack_reference.require_output(LAMBDA_ROLE_ARN)
+
+    def get_state_machine_role_arn(self):
+        return self.infra_stack_reference.require_output(STATE_FUNCTION_ROLE_ARN)
+
+    def get_cloudevent_trigger_role_arn(self):
+        return self.infra_stack_reference.require_output(
+            CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
         )
 
     def fetch_source_directory_name(self):
@@ -122,7 +131,6 @@ class CreatePipeline(CreateInfrastructureBlock):
                 platform="linux/amd64",
                 args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
                 builder_version="BuilderBuildKit",
-                # TODO: Do we get this from envs or config?
                 context=os.getenv("CONFIG_REPO_PATH"),
                 cache_from=docker.CacheFromArgs(images=[image]),
             ),
@@ -171,7 +179,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.pipeline_definition,
             self.cloudevent_bridge_rule.outputs.cloudwatch_event_rule.name,
             self.cloudevent_trigger_role_arn,
-            state_machine_outputs,
+            state_machine_outputs.state_machine.arn,
         )
         cloudevent_bridge_target.exec()
 
