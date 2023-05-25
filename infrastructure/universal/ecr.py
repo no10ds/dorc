@@ -36,7 +36,7 @@ class CreateEcrResource(CreateResourceBlock):
     def export(self):
         pulumi.export(
             self.create_repository_arn_export_key(self.repo_name),
-            self.outputs.ecr_repo_arn,
+            self.outputs.ecr_repo.arn,
         )
         pulumi.export(
             self.create_repository_id_export_key(self.repo_name),

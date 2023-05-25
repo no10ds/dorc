@@ -2,7 +2,7 @@ import pytest
 import pulumi
 
 from pulumi_docker import Image
-from infrastructure.core.lambda_ import CreatePipelineLambdaFunction
+from infrastructure.core._lambda import CreatePipelineLambdaFunction
 from infrastructure.core.creator import CreatePipeline
 
 from tests.utils import config, pipeline_definition
