@@ -10,3 +10,5 @@ typeguard
 pytest
 pytest-cov
 mock
+mkdocs
+mkdocs-material

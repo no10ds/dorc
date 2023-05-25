@@ -1,0 +1,10 @@
+site_name: dorc
+
+theme:
+  name: 'material'
+
+nav:
+  - Welcome to dorc: index.md
+  - Getting started: getting_started.md
+  - Configuration: config.md
+  - Changelog: changelog.md
