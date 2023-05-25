@@ -10,7 +10,7 @@ from typing import List, Tuple
 
 class PulumiMocks(pulumi.runtime.Mocks):
     def new_resource(self, args: MockResourceArgs):
-        return [f"{args.name}_id", args.inputs]
+        return args.name, args.inputs
 
     def call(self, args: MockCallArgs) -> Tuple[dict, List[Tuple[str, str]] | None]:
         return {}

@@ -34,10 +34,27 @@ class CreateEcrResource(CreateResourceBlock):
         return output
 
     def export(self):
-        pulumi.export(f"ecr_repository_{self.repo_name}_arn", self.outputs.ecr_repo.arn)
         pulumi.export(
-            f"ecr_repository_{self.repo_name}_id", self.outputs.ecr_repo.registry_id
+            self.create_repository_arn_export_key(self.repo_name),
+            self.outputs.ecr_repo.arn,
         )
         pulumi.export(
-            f"ecr_repository_{self.repo_name}_url", self.outputs.ecr_repo.repository_url
+            self.create_repository_id_export_key(self.repo_name),
+            self.outputs.ecr_repo.registry_id,
         )
+        pulumi.export(
+            self.create_repository_url_export_key(self.repo_name),
+            self.outputs.ecr_repo.repository_url,
+        )
+
+    @staticmethod
+    def create_repository_arn_export_key(repo_name: str) -> str:
+        return f"ecr_repository_{repo_name}_arn"
+
+    @staticmethod
+    def create_repository_id_export_key(repo_name: str) -> str:
+        return f"ecr_repository_{repo_name}_id"
+
+    @staticmethod
+    def create_repository_url_export_key(repo_name: str) -> str:
+        return f"ecr_repository_{repo_name}_url"

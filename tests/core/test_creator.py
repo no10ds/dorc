@@ -20,7 +20,7 @@ class TestCreatePipeline:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     def test_instantiate_pipeline_creator(self, pipeline_infrastructure_block):
@@ -34,12 +34,14 @@ class TestCreatePipeline:
         pipeline_infrastructure_block.infra_stack_reference = (
             mocked_infra_stack_reference
         )
-        mocked_infra_stack_reference.get_output.return_value = "mocked_lambda_arn"
+        mocked_infra_stack_reference.require_output.return_value = "mocked_lambda_arn"
 
         assert (
             pipeline_infrastructure_block.get_lambda_role_arn() == "mocked_lambda_arn"
         )
-        mocked_infra_stack_reference.get_output.assert_called_once_with(LAMBDA_ROLE_ARN)
+        mocked_infra_stack_reference.require_output.assert_called_once_with(
+            LAMBDA_ROLE_ARN
+        )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     def test_pipeline_creator_retrieves_state_machine_role_arn(
@@ -49,7 +51,7 @@ class TestCreatePipeline:
         pipeline_infrastructure_block.infra_stack_reference = (
             mocked_infra_stack_reference
         )
-        mocked_infra_stack_reference.get_output.return_value = (
+        mocked_infra_stack_reference.require_output.return_value = (
             "mocked_state_machine_arn"
         )
 
@@ -57,7 +59,7 @@ class TestCreatePipeline:
             pipeline_infrastructure_block.get_state_machine_role_arn()
             == "mocked_state_machine_arn"
         )
-        mocked_infra_stack_reference.get_output.assert_called_once_with(
+        mocked_infra_stack_reference.require_output.assert_called_once_with(
             STATE_FUNCTION_ROLE_ARN
         )
 
@@ -69,7 +71,7 @@ class TestCreatePipeline:
         pipeline_infrastructure_block.infra_stack_reference = (
             mocked_infra_stack_reference
         )
-        mocked_infra_stack_reference.get_output.return_value = (
+        mocked_infra_stack_reference.require_output.return_value = (
             "mocked_cloudevent_trigger_arn"
         )
 
@@ -77,12 +79,12 @@ class TestCreatePipeline:
             pipeline_infrastructure_block.get_cloudevent_trigger_role_arn()
             == "mocked_cloudevent_trigger_arn"
         )
-        mocked_infra_stack_reference.get_output.assert_called_once_with(
+        mocked_infra_stack_reference.require_output.assert_called_once_with(
             CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
         )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    def test_pipeline_creator_create_source_directory(
+    def test_pipeline_creator_fetch_source_directory_name(
         self, pipeline_infrastructure_block: CreatePipeline
     ):
         pipeline_infrastructure_block.pipeline_definition.file_path = (
@@ -90,14 +92,14 @@ class TestCreatePipeline:
         )
 
         assert (
-            pipeline_infrastructure_block.create_source_directory().rsplit(
+            pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
                 "10ds-core-pipelines/tests/", 1
             )[-1]
             == "mock_config_repo_src/src/test/layer/src"
         )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    def test_pipeline_creator_create_source_directory_with_no_source_code_path(
+    def test_pipeline_creator_fetch_source_directory_name_with_no_source_code_path(
         self, pipeline_infrastructure_block: CreatePipeline
     ):
         pipeline_infrastructure_block.pipeline_definition.file_path = (
@@ -106,7 +108,7 @@ class TestCreatePipeline:
         pipeline_infrastructure_block.config.universal.source_code_path = ""
 
         assert (
-            pipeline_infrastructure_block.create_source_directory().rsplit(
+            pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
                 "10ds-core-pipelines/tests/", 1
             )[-1]
             == "mock_config_repo_src/src/test/layer"
