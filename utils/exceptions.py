@@ -6,5 +6,5 @@ class EnvironmentRequiredException(Exception):
     pass
 
 
-class StepFunctionDoesNotExistException(Exception):
+class PipelineDoesNotExistException(Exception):
     pass

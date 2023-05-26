@@ -16,7 +16,7 @@ from infrastructure.core.models.definition import (
 
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
-from utils.exceptions import StepFunctionDoesNotExistException
+from utils.exceptions import PipelineDoesNotExistException
 
 
 class CreatePipelineStateMachine(CreateResourceBlock):
@@ -32,7 +32,7 @@ class CreatePipelineStateMachine(CreateResourceBlock):
         pipeline_definition: PipelineDefinition,
         lambdas_dict: dict,
         state_machine_role,
-        step_functions_client = boto3.client('stepfunctions')
+        step_functions_client=boto3.client("stepfunctions"),
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.pipeline_name = pipeline_name
@@ -117,12 +117,12 @@ class CreatePipelineStateMachine(CreateResourceBlock):
 
     def fetch_step_function_arn_from_name(self, name: str) -> str:
         function_name = self.create_function_name(name)
-        response = self.step_functions_client.list_state_machines()['stateMachines']
+        response = self.step_functions_client.list_state_machines()["stateMachines"]
         for sfn in response:
-            if sfn['name'] == function_name:
-                arn = sfn['stateMachineArn']
+            if sfn["name"] == function_name:
+                arn = sfn["stateMachineArn"]
                 return arn
-        raise StepFunctionDoesNotExistException(f"Could not find the set")
+        raise PipelineDoesNotExistException(f"Could not find pipeline {name}")
 
     def create_pipeline_next_trigger_state(self, next_function: str):
         next_function_arn = self.fetch_step_function_arn_from_name(next_function)

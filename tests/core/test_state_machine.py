@@ -15,7 +15,7 @@ from infrastructure.core.models.definition import (
     NextFunctionTypes,
     Function,
 )
-from utils.exceptions import StepFunctionDoesNotExistException
+from utils.exceptions import PipelineDoesNotExistException
 
 from tests.utils import config, pipeline_definition
 
@@ -33,7 +33,14 @@ class TestCreateStateMachine:
         self, pipeline_infrastructure_block: CreatePipeline
     ):
         mock_step_function_client = MagicMock()
-        mock_step_function_client.list_state_machines.return_value = {'stateMachines': [{'name': 'test_pipeline_test_pipeline', "stateMachineArn": "test_pipeline_arn"}]}
+        mock_step_function_client.list_state_machines.return_value = {
+            "stateMachines": [
+                {
+                    "name": "test_pipeline_test_pipeline",
+                    "stateMachineArn": "test_pipeline_arn",
+                }
+            ]
+        }
 
         state_machine_resource_block = CreatePipelineStateMachine(
             pipeline_infrastructure_block.config,
@@ -43,7 +50,7 @@ class TestCreateStateMachine:
             pipeline_infrastructure_block.pipeline_definition,
             {},
             "test:state-machine:role",
-            mock_step_function_client
+            mock_step_function_client,
         )
         yield state_machine_resource_block
 
@@ -303,5 +310,7 @@ class TestCreateStateMachine:
 
     @pytest.mark.usefixtures("state_machine_resource_block")
     def test_fetch_step_function_arn_from_name(self, state_machine_resource_block):
-        with pytest.raises(StepFunctionDoesNotExistException):
-            state_machine_resource_block.fetch_step_function_arn_from_name("non_existent_function")
+        with pytest.raises(PipelineDoesNotExistException):
+            state_machine_resource_block.fetch_step_function_arn_from_name(
+                "non_existent_function"
+            )

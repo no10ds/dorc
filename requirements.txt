@@ -9,3 +9,5 @@ checksumdir
 typeguard
 pytest
 mock
+boto3
+moto
