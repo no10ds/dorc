@@ -1,6 +1,6 @@
 *dorc* is 10 Downing's Street internal data orchestration library.
 
-*dorc* allows for serverless data projets defined in Python code and automatically deployed into any Amazon Web Services environment.
+*dorc* allows for serverless data projects to be defined in Python code and automatically deployed into any Amazon Web Services environment.
 
 ## Overview
 
