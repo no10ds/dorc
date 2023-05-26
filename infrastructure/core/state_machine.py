@@ -1,3 +1,4 @@
+import boto3
 import json
 
 import pulumi
@@ -15,6 +16,7 @@ from infrastructure.core.models.definition import (
 
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
+from utils.exceptions import StepFunctionDoesNotExistException
 
 
 class CreatePipelineStateMachine(CreateResourceBlock):
@@ -30,6 +32,7 @@ class CreatePipelineStateMachine(CreateResourceBlock):
         pipeline_definition: PipelineDefinition,
         lambdas_dict: dict,
         state_machine_role,
+        step_functions_client = boto3.client('stepfunctions')
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.pipeline_name = pipeline_name
@@ -37,6 +40,7 @@ class CreatePipelineStateMachine(CreateResourceBlock):
         self.lambdas_dict = lambdas_dict
         self.state_machine_role = state_machine_role
         self.project = self.config.project
+        self.step_functions_client = step_functions_client
 
     def apply(self) -> Output:
         state_machine_definition = pulumi.Output.all(
@@ -111,14 +115,21 @@ class CreatePipelineStateMachine(CreateResourceBlock):
 
         return _map
 
-    def create_pipeline_next_trigger_state(self, next_function):
-        # TODO: This function needs more work and greater thinking - first we don't want the user to have to pass
-        # in the state machine arn, they just want to pass the name and we handle the rest
-        # second is having this as the termination step correct?
+    def fetch_step_function_arn_from_name(self, name: str) -> str:
+        function_name = self.create_function_name(name)
+        response = self.step_functions_client.list_state_machines()['stateMachines']
+        for sfn in response:
+            if sfn['name'] == function_name:
+                arn = sfn['stateMachineArn']
+                return arn
+        raise StepFunctionDoesNotExistException(f"Could not find the set")
+
+    def create_pipeline_next_trigger_state(self, next_function: str):
+        next_function_arn = self.fetch_step_function_arn_from_name(next_function)
         _map = {
             "Type": "Task",
             "Resource": "arn:aws:states:::states:startExecution.sync:2",
-            "Parameters": {"StateMachineArn": next_function},
+            "Parameters": {"StateMachineArn": next_function_arn},
             "End": True,
         }
 

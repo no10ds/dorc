@@ -4,3 +4,7 @@ class InvalidPipelineDefinitionException(Exception):
 
 class EnvironmentRequiredException(Exception):
     pass
+
+
+class StepFunctionDoesNotExistException(Exception):
+    pass
