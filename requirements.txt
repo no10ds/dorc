@@ -4,6 +4,7 @@ pulumi_docker
 pulumi-terraform
 python-dotenv
 pydantic
+pylint
 gitpython
 checksumdir
 typeguard
@@ -12,3 +13,4 @@ pytest-cov
 mock
 mkdocs
 mkdocs-material
+-e .

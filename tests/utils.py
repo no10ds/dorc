@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 
 from utils.config import UniversalConfig, Config
 from infrastructure.core.models.definition import (

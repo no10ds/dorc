@@ -1,7 +1,7 @@
 import pulumi
 
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi_aws import Provider
 
 from utils.exceptions import EnvironmentRequiredException

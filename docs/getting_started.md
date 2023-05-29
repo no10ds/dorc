@@ -80,7 +80,7 @@ See the description and a example for each of the variables below
 * CONFIG_REPO_PATH - The directory path that points to your private source code folder. For the recommended structure above this value would be `../private-source-code`
 * UNIVERSAL_STACK_NAME - The folder location & name of the infrastructure stack that the universal infrastructure will be deployed too. **We recommend leaving this as *universal* if possible**.
 * INFRA_STACK_NAME - The folder location & name of the infrastructure stack that the infra infrastructure will be deployed too. **We recommend leaving this as *infra* if possible**.
-* PULUMI_CONFIG_PASSPHRASE - 
+* PULUMI_CONFIG_PASSPHRASE -
 
 ## Setup
 
@@ -116,9 +116,7 @@ config = UniversalConfig(
     region="eu-west-2",
     project="ExampleDorc",
     config_repo_path="../private-source-code",
-    tags={
-        "project": "example-dorc"
-    },
+    tags={"project": "example-dorc"},
 )
 
 universal_infrastructure_creator = CreateUniversal(config)
@@ -166,9 +164,7 @@ from infrastructure.infra import CreateInfra
 config = Config(
     universal=YOUR_BASE_UNIVERSAL_CONFIG,
     vpc_id="aws_vpc_id",
-    private_subnet_ids=[
-        "aws_private_subnet_id"
-    ]
+    private_subnet_ids=["aws_private_subnet_id"],
 )
 
 infra_infrastructure_creator = CreateInfra(config)

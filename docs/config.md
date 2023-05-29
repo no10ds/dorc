@@ -36,7 +36,7 @@ Config(
 
     additional_lambda_role_policy_arn: Optional[pulumi.Output[str] | str]
     additional_state_function_role_policy_arn: Optional[pulumi.Output[str] | str]
-    additional_cloudevent_state_machine_trigger_role_policy_arn: Optional[pulumi.Output[str] | str] 
+    additional_cloudevent_state_machine_trigger_role_policy_arn: Optional[pulumi.Output[str] | str]
 )
 ```
 

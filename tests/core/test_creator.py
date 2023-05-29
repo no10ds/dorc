@@ -2,7 +2,7 @@ import pytest
 import os
 import pulumi
 
-from pydantic import BaseModel
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi import Output
 from mock import MagicMock, patch
 from infrastructure.core.creator import CreatePipeline
