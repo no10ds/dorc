@@ -8,5 +8,7 @@ gitpython
 checksumdir
 typeguard
 pytest
-pytest-cov
 mock
+boto3
+moto
+pytest-cov

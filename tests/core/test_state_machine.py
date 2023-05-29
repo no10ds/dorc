@@ -1,4 +1,7 @@
+import boto3
 import json
+from moto import mock_stepfunctions
+from mock import MagicMock
 import pytest
 import pulumi
 
@@ -11,6 +14,7 @@ from infrastructure.core.models.definition import (
     NextFunctionTypes,
     Function,
 )
+from utils.exceptions import PipelineDoesNotExistException
 
 from tests.utils import config, pipeline_definition
 
@@ -27,6 +31,16 @@ class TestCreateStateMachine:
     def state_machine_resource_block(
         self, pipeline_infrastructure_block: CreatePipeline
     ):
+        mock_step_function_client = MagicMock()
+        mock_step_function_client.list_state_machines.return_value = {
+            "stateMachines": [
+                {
+                    "name": "test_pipeline_test_pipeline",
+                    "stateMachineArn": "test_pipeline_arn",
+                }
+            ]
+        }
+
         state_machine_resource_block = CreatePipelineStateMachine(
             pipeline_infrastructure_block.config,
             pipeline_infrastructure_block.aws_provider,
@@ -35,6 +49,7 @@ class TestCreateStateMachine:
             pipeline_infrastructure_block.pipeline_definition,
             {},
             "test:state-machine:role",
+            mock_step_function_client,
         )
         return state_machine_resource_block
 
@@ -169,7 +184,7 @@ class TestCreateStateMachine:
                 "test_pipeline_test_lambda_2": {
                     "Type": "Task",
                     "Resource": "arn:aws:states:::states:startExecution.sync:2",
-                    "Parameters": {"StateMachineArn": "test-pipeline"},
+                    "Parameters": {"StateMachineArn": "test_pipeline_arn"},
                     "End": True,
                 },
             },
@@ -257,7 +272,7 @@ class TestCreateStateMachine:
                     "test_pipeline_test_lambda_2": {
                         "Type": "Task",
                         "Resource": "arn:aws:states:::states:startExecution.sync:2",
-                        "Parameters": {"StateMachineArn": "test-pipeline"},
+                        "Parameters": {"StateMachineArn": "test_pipeline_arn"},
                         "End": True,
                     },
                 },
@@ -291,3 +306,10 @@ class TestCreateStateMachine:
         return pulumi.Output.all(
             state_machine_resource_block.outputs.state_machine.definition
         ).apply(check_state_function)
+
+    @pytest.mark.usefixtures("state_machine_resource_block")
+    def test_fetch_step_function_arn_from_name(self, state_machine_resource_block):
+        with pytest.raises(PipelineDoesNotExistException):
+            state_machine_resource_block.fetch_step_function_arn_from_name(
+                "non_existent_function"
+            )
