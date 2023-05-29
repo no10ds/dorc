@@ -11,3 +11,4 @@ pytest
 mock
 boto3
 moto
+pytest-cov

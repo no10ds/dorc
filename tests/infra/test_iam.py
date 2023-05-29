@@ -13,7 +13,7 @@ class TestCreateIamResource:
     @pytest.fixture
     def infra_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         infra_infrastructure_block = CreateInfra(config)
-        yield infra_infrastructure_block
+        return infra_infrastructure_block
 
     @pytest.mark.usefixtures("infra_infrastructure_block")
     @pytest.fixture
@@ -25,7 +25,7 @@ class TestCreateIamResource:
             aws_provider=infra_infrastructure_block.aws_provider,
             environment=infra_infrastructure_block.environment,
         )
-        yield iam_resource_block
+        return iam_resource_block
 
     @pytest.mark.usefixtures("iam_resource_block")
     def test_instantiate_create_iam_resource(self, iam_resource_block):

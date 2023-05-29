@@ -5,7 +5,6 @@ from mock import MagicMock
 import pytest
 import pulumi
 
-from pulumi import Output
 from pulumi_aws.lambda_ import Function as AwsFunction
 from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.creator import CreatePipeline
@@ -25,7 +24,7 @@ class TestCreateStateMachine:
     @pytest.fixture
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        yield pipeline_infrastructure_block
+        return pipeline_infrastructure_block
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
     @pytest.fixture
@@ -52,7 +51,7 @@ class TestCreateStateMachine:
             "test:state-machine:role",
             mock_step_function_client,
         )
-        yield state_machine_resource_block
+        return state_machine_resource_block
 
     @pytest.mark.usefixtures("state_machine_resource_block")
     def test_instantiate_create_state_machine_resource(

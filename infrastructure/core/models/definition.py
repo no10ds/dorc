@@ -57,13 +57,12 @@ class PipelineDefinition(BaseModel):
     cloudwatch_trigger: Optional[CloudwatchS3Trigger | CloudwatchCronTrigger] = None
 
     @validator("functions")
-    def check_for_only_one_termination(cls, value: list[Function]):
-        nones_found = 0
-        for function in value:
-            if function.next_function is None:
-                nones_found += 1
-            if nones_found > 1:
-                raise ValueError(
-                    "Pipeline definition can only contain one termination step"
-                )
-        return value
+    def check_for_only_one_termination(cls, functions: list[Function]):
+        termination_steps = sum(
+            1 for function in functions if function.next_function is None
+        )
+        if termination_steps > 1:
+            raise ValueError(
+                "Pipeline definition can only contain one termination step"
+            )
+        return functions
