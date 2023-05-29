@@ -6,5 +6,15 @@ theme:
 nav:
   - Welcome to dorc: index.md
   - Getting started: getting_started.md
+  - Pipelines: pipelines.md
   - Configuration: config.md
   - Changelog: changelog.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.extra
+  - pymdownx.emoji:
+      emoji_index: !!python/name:materialx.emoji.twemoji
+      emoji_generator: !!python/name:materialx.emoji.to_svg
+  - pymdownx.tabbed:
+      alternate_style: true
