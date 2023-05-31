@@ -18,6 +18,7 @@ from tests.utils import config, pipeline_definition, MockedEcrAuthentication
 class TestCreatePipeline:
     @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
     @pytest.fixture
+    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "10ds-core-pipelines"})
     def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         return pipeline_infrastructure_block

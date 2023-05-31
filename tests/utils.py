@@ -9,7 +9,6 @@ from infrastructure.core.models.definition import (
 universal_config = UniversalConfig(
     region="eu-west-2",
     project="test-pipelines",
-    config_repo_path="./tests/mock_config_repo_src",
     tags={"tag": "test"},
 )
 

@@ -115,7 +115,6 @@ from infrastructure.universal import CreateUniversal
 config = UniversalConfig(
     region="eu-west-2",
     project="ExampleDorc",
-    config_repo_path="../private-source-code",
     tags={"project": "example-dorc"},
 )
 

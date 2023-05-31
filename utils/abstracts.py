@@ -1,3 +1,4 @@
+import os
 import pulumi
 
 from abc import ABC, abstractmethod
@@ -17,6 +18,7 @@ class CreateInfrastructureBlock(ABC):
         super().__init__()
         self.pulumi_config = pulumi.Config()
         self.config = config
+        self.config_repo_path = os.getenv("CONFIG_REPO_PATH")
         register_default_tags(self.config.tags)
         self.aws_provider = create_aws_provider(self.config.region)
 
