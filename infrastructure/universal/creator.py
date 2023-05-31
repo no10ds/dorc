@@ -1,35 +1,28 @@
-from pydantic import ValidationError
-from pulumi import Output
-import pulumi
-import pulumi_aws as aws
+import os
+import glob
 
-from utils.exceptions import InvalidConfigException
-from infrastructure.universal.config import Config
-from infrastructure.universal.iam import CreateIAM
+from infrastructure.universal.ecr import CreateEcrResource
+from utils.abstracts import CreateInfrastructureBlock
+from utils.config import UniversalConfig
 
 
-class CreateUniversalPipelineInfrastructure:
-    def __init__(self, config: dict | Config) -> None:
-        try:
-            if isinstance(config, dict):
-                self.config = Config.parse_obj(config)
-            else:
-                self.config = config
-        except ValidationError as e:
-            # TODO: Probably want a custom error here
-            raise InvalidConfigException(str(e))
+class CreateUniversal(CreateInfrastructureBlock):
+    def __init__(self, config: UniversalConfig) -> None:
+        super().__init__(config, skip_environment_check=True)
+        self.repo_list = self.retrieve_repo_list_from_folders()
 
-    def apply(self) -> None:
-        aws.cloudwatch.LogGroup(
-            f"{self.config.project}-pipelines-log-group",
-            name=f"{self.config.project}-pipelines-log-group",
-        )
+    def retrieve_repo_list_from_folders(self) -> list[str]:
+        source_path = f"{self.config.config_repo_path}/{self.config.source_code_path}"
+        return [
+            dirpath.replace(source_path, "").strip("/").replace("/", "-")
+            for dirpath in glob.glob(os.path.join(source_path, "*", "*"))
+            if os.path.isdir(dirpath)
+        ]
 
-        CreateIAM(self.config).apply()
-
-        self.export()
-
-    def export(self) -> None:
-        config_export: dict = dict(self.config)
-        for key, value in config_export.items():
-            pulumi.export(key, value)
+    def apply(self):
+        for repo in self.repo_list:
+            create_ecr_resource = CreateEcrResource(
+                self.config, self.aws_provider, repo
+            )
+            create_ecr_resource.exec()
+            create_ecr_resource.export()

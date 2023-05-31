@@ -1,1 +1,1 @@
-from infrastructure.universal.creator import CreateUniversalPipelineInfrastructure
+from infrastructure.universal.creator import CreateUniversal

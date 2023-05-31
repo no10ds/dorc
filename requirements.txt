@@ -6,3 +6,9 @@ python-dotenv
 pydantic
 gitpython
 checksumdir
+typeguard
+pytest
+mock
+boto3
+moto
+pytest-cov
