@@ -3,7 +3,7 @@ from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from utils.config import UniversalConfig, Config
 from infrastructure.core.models.definition import (
     PipelineDefinition,
-    CloudwatchCronTrigger,
+    CronTrigger,
 )
 
 universal_config = UniversalConfig(
@@ -22,9 +22,7 @@ pipeline_definition = PipelineDefinition(
     file_path="./tests/mock_config_repo_src/src/test/layer/__main__.py",
     description="Test pipeline description",
     functions=[],
-    cloudwatch_trigger=CloudwatchCronTrigger(
-        name="test-pipeline-cron", cron="cron(0/6 * * * ? *)"
-    ),
+    trigger=CronTrigger(name="test-pipeline-cron", cron="cron(0/6 * * * ? *)"),
 )
 
 

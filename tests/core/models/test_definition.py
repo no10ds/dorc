@@ -2,23 +2,23 @@ import pytest
 import json
 
 from infrastructure.core.models.definition import (
-    CloudwatchS3Trigger,
-    CloudwatchCronTrigger,
+    S3Trigger,
+    CronTrigger,
 )
 
 
-class TestCloudwatchS3Trigger:
+class TestS3Trigger:
     @pytest.fixture
-    def cloudwatch_s3_trigger(self) -> CloudwatchS3Trigger:
-        return CloudwatchS3Trigger(
+    def s3_trigger(self) -> S3Trigger:
+        return S3Trigger(
             name="test-s3-trigger",
             bucket_name="test-bucket",
             key_prefix="test/prefix",
         )
 
-    @pytest.mark.usefixtures("cloudwatch_s3_trigger")
-    def test_event_pattern(self, cloudwatch_s3_trigger):
-        event_pattern = cloudwatch_s3_trigger.event_pattern()
+    @pytest.mark.usefixtures("s3_trigger")
+    def test_event_pattern(self, s3_trigger):
+        event_pattern = s3_trigger.event_pattern()
         assert event_pattern == json.dumps(
             {
                 "source": ["aws.s3"],
@@ -33,25 +33,23 @@ class TestCloudwatchS3Trigger:
             }
         )
 
-    @pytest.mark.usefixtures("cloudwatch_s3_trigger")
-    def test_schedule_expression(self, cloudwatch_s3_trigger):
-        schedule_expression = cloudwatch_s3_trigger.schedule_expression()
+    @pytest.mark.usefixtures("s3_trigger")
+    def test_schedule_expression(self, s3_trigger):
+        schedule_expression = s3_trigger.schedule_expression()
         assert schedule_expression is None
 
 
-class TestCloudwatchCronTrigger:
+class TestCronTrigger:
     @pytest.fixture
-    def cloudwatch_cron_trigger(self) -> CloudwatchCronTrigger:
-        return CloudwatchCronTrigger(
-            name="test-cron-trigger", cron="cron(0/5 * * * ? *)"
-        )
+    def cron_trigger(self) -> CronTrigger:
+        return CronTrigger(name="test-cron-trigger", cron="cron(0/5 * * * ? *)")
 
-    @pytest.mark.usefixtures("cloudwatch_cron_trigger")
-    def test_event_pattern(self, cloudwatch_cron_trigger):
-        event_pattern = cloudwatch_cron_trigger.event_pattern()
+    @pytest.mark.usefixtures("cron_trigger")
+    def test_event_pattern(self, cron_trigger):
+        event_pattern = cron_trigger.event_pattern()
         assert event_pattern is None
 
-    @pytest.mark.usefixtures("cloudwatch_cron_trigger")
-    def test_schedule_expression(self, cloudwatch_cron_trigger):
-        schedule_expression = cloudwatch_cron_trigger.schedule_expression()
+    @pytest.mark.usefixtures("cron_trigger")
+    def test_schedule_expression(self, cron_trigger):
+        schedule_expression = cron_trigger.schedule_expression()
         assert schedule_expression == "cron(0/5 * * * ? *)"

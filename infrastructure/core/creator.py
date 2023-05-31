@@ -69,7 +69,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.config,
             self.aws_provider,
             self.environment,
-            self.pipeline_definition.cloudwatch_trigger,
+            self.pipeline_definition.trigger,
         )
 
     def get_lambda_role_arn(self):
@@ -96,10 +96,10 @@ class CreatePipeline(CreateInfrastructureBlock):
         ecr_repo_url_output.apply(
             lambda url: self.build_and_deploy_folder_structure_functions(url)
         ).apply(lambda _: self.apply_state_machine().apply()).apply(
-            lambda state_machine_outputs: self.apply_cloudwatch_state_machine_trigger(
+            lambda state_machine_outputs: self.apply_state_machine_trigger(
                 state_machine_outputs
             )
-            if self.pipeline_definition.cloudwatch_trigger is not None
+            if self.pipeline_definition.trigger is not None
             else None
         )
 
@@ -167,7 +167,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.state_machine_role_arn,
         )
 
-    def apply_cloudwatch_state_machine_trigger(
+    def apply_state_machine_trigger(
         self, state_machine_outputs: CreatePipelineStateMachine.Output
     ):
         self.cloudevent_bridge_rule.exec()

@@ -9,14 +9,14 @@ PipelineDefinition(
     file_path: str
     description: Optional[str]
     functions: list[Function]
-    cloudwatch_trigger: Optional[CloudwatchS3Trigger | CloudwatchCronTrigger]
+    trigger: Optional[S3Trigger | CronTrigger]
 )
 ```
 
 * `file_path` - The releative path to the pipeline `__main__.py` file. It is advised to use the python `__file__` operator for this value
 * `description` - Optional description used to describe this pipeline
 * `functions` - List of pipeline `Function` that will define the structure
-* `cloudwatch_trigger` - Optional aws cloudwatch triggers that can be used to trigger the pipeline, choice between a `CloudwatchS3Trigger` or `CloudwatchCronTrigger`
+* `trigger` - Optional aws trigger that can be used to start the pipeline, choice between a `S3Trigger` or `CronTrigger`
 
 ## Function
 
@@ -84,7 +84,7 @@ Function(
 )
 ```
 
-## Cloudwatch Trigger
+## Trigger
 
 We can optionally set triggers on our pipeline that based on the condition will automatically run our pipeline.
 
@@ -93,9 +93,9 @@ We can optionally set triggers on our pipeline that based on the condition will 
 As *dorc* is built upon aws we can trigger a pipeline on a new object being placed within a S3 bucket. This is useful to run pipelines automatically on new data entering some area.
 
 ```python
-from infrastructure.core.models.definition import CloudwatchS3Trigger
+from infrastructure.core.models.definition import S3Trigger
 
-CloudwatchS3Trigger(
+S3Trigger(
     name: str
     bucket_name: str
     key_prefix: str
@@ -111,9 +111,9 @@ CloudwatchS3Trigger(
 You can periodically trigger your pipeline to run at defined times using a aws cron expression. This is useful if you are pulling data from a api and wish for it to be refreshed at some given cadence.
 
 ```python
-from infrastructure.core.models.definition import CloudwatchCronTrigger
+from infrastructure.core.models.definition import CronTrigger
 
-CloudwatchCronTrigger(
+CronTrigger(
     name: str
     cron: str
 )

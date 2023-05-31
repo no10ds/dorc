@@ -6,7 +6,7 @@ from pydantic import BaseModel, validator  # pylint: disable=no-name-in-module
 from infrastructure.core.models.event_bridge import EventBridge, S3EventBridgeModel
 
 
-class CloudwatchS3Trigger(BaseModel):
+class S3Trigger(BaseModel):
     name: str
     bucket_name: str
     key_prefix: str
@@ -24,7 +24,7 @@ class CloudwatchS3Trigger(BaseModel):
         return None
 
 
-class CloudwatchCronTrigger(BaseModel):
+class CronTrigger(BaseModel):
     name: str
     cron: str
 
@@ -54,7 +54,7 @@ class PipelineDefinition(BaseModel):
     file_path: str
     description: Optional[str] = ""
     functions: list[Function]
-    cloudwatch_trigger: Optional[CloudwatchS3Trigger | CloudwatchCronTrigger] = None
+    trigger: Optional[S3Trigger | CronTrigger] = None
 
     @validator("functions")
     def check_for_only_one_termination(
