@@ -11,14 +11,14 @@ UniversalConfig(
     region: str
     project: str
     tags: Optional[dict]
-    source_code_path: Optional[str] = "src"
+    source_code_folder: Optional[str] = "src"
 )
 ```
 
 * `region` - The aws region in which all infrastructure will be deployed to
 * `project` - Your high level project name
 * `tags` - An optional dictionary of key-value tags to apply to every resource created
-* `source_code_path` - The name of the folder within your private source repository that the pipeline definitions are saved. This value defaults to `src`
+* `source_code_folder` - The name of the folder within your private source repository that the pipeline definitions are saved. This value defaults to `src`
 
 ## Configuration
 

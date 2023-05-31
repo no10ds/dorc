@@ -85,7 +85,7 @@ class CreatePipeline(CreateInfrastructureBlock):
 
     def fetch_source_directory_name(self):
         top_dir = os.path.dirname(self.pipeline_definition.file_path)
-        return os.path.abspath(os.path.join(top_dir, self.config.source_code_path))
+        return os.path.abspath(os.path.join(top_dir, self.config.source_code_folder))
 
     def apply(self):
         self.authenticate_to_ecr_repo()

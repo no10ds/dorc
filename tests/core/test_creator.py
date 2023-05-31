@@ -100,13 +100,13 @@ class TestCreatePipeline:
         )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    def test_pipeline_creator_fetch_source_directory_name_with_no_source_code_path(
+    def test_pipeline_creator_fetch_source_directory_name_with_no_source_code_folder(
         self, pipeline_infrastructure_block: CreatePipeline
     ):
         pipeline_infrastructure_block.pipeline_definition.file_path = (
             "./tests/mock_config_repo_src/src/test/layer/__main__.py"
         )
-        pipeline_infrastructure_block.config.universal.source_code_path = ""
+        pipeline_infrastructure_block.config.universal.source_code_folder = ""
 
         assert (
             pipeline_infrastructure_block.fetch_source_directory_name().rsplit(

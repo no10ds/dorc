@@ -25,16 +25,16 @@ class TestCreateUniversal:
     @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
     @patch.dict(os.environ, {"CONFIG_REPO_PATH": "./tests/mock_config_repo_src"})
     def test_retrieve_repo_list_from_folders(self, mock_pulumi, mock_pulumi_config):
-        universal_config.source_code_path = "src"
+        universal_config.source_code_folder = "src"
         universal_block = CreateUniversal(universal_config)
         assert universal_block.repo_list == ["test-layer"]
 
     @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
     @patch.dict(os.environ, {"CONFIG_REPO_PATH": "./tests/mock_config_repo"})
-    def test_retrieve_repo_list_from_folders_different_source_code_path(
+    def test_retrieve_repo_list_from_folders_different_source_code_folder(
         self, mock_pulumi, mock_pulumi_config
     ):
-        universal_config.source_code_path = ""
+        universal_config.source_code_folder = ""
         universal_block = CreateUniversal(universal_config)
         assert universal_block.repo_list == ["test-layer2"]
 
