@@ -4,3 +4,7 @@ class InvalidPipelineDefinitionException(Exception):
 
 class EnvironmentRequiredException(Exception):
     pass
+
+
+class CannotFindEnvironmentVariableException(Exception):
+    pass
