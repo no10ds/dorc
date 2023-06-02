@@ -68,3 +68,5 @@ class PipelineDefinition(BaseModel):
                 "Pipeline definition can only contain one termination step"
             )
         return functions
+
+    # TODO: Add a check that the functions actually exist

@@ -1,9 +1,11 @@
 import os
-import glob
+from glob import glob
 
 from infrastructure.universal.ecr import CreateEcrResource
 from utils.abstracts import CreateInfrastructureBlock
 from utils.config import UniversalConfig
+from utils.constants import LAMBDA_HANDLER_FILE
+from utils.filesystem import extract_lambda_name_from_filepath
 
 
 class CreateUniversal(CreateInfrastructureBlock):
@@ -12,11 +14,15 @@ class CreateUniversal(CreateInfrastructureBlock):
         self.repo_list = self.retrieve_repo_list_from_folders()
 
     def retrieve_repo_list_from_folders(self) -> list[str]:
-        source_path = f"{self.config.config_repo_path}/{self.config.source_code_path}"
         return [
-            dirpath.replace(source_path, "").strip("/").replace("/", "-")
-            for dirpath in glob.glob(os.path.join(source_path, "*", "*"))
-            if os.path.isdir(dirpath)
+            extract_lambda_name_from_filepath(
+                path.replace(self.config.source_code_path, "")
+            )
+            for path in glob(
+                os.path.join(
+                    self.config.source_code_path, "*", "*", "*", LAMBDA_HANDLER_FILE
+                )
+            )
         ]
 
     def apply(self):

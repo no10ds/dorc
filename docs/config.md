@@ -12,7 +12,7 @@ UniversalConfig(
     project: str
     config_repo_path: str
     tags: Optional[dict]
-    source_code_path: Optional[str] = "src"
+    source_code_folder: Optional[str] = "src"
 )
 ```
 
@@ -20,7 +20,7 @@ UniversalConfig(
 * `project` - Your high level project name
 * `config_repo_path` - Relevant path from the *dorc* repository to your private source code repository
 * `tags` - An optional dictionary of key-value tags to apply to every resource created
-* `source_code_path` - The name of the folder within your private source repository that the pipeline definitions are saved. This value defaults to `src`
+* `source_code_folder` - The name of the folder within your private source repository that the pipeline definitions are saved. This value defaults to `src`
 
 ## Configuration
 

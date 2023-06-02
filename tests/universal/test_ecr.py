@@ -5,13 +5,13 @@ from mock import patch, call, ANY
 from infrastructure.universal.ecr import CreateEcrResource
 from infrastructure.universal.creator import CreateUniversal
 
-from tests.utils import universal_config
-
 
 class TestCreateEcrResource:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "universal_config")
     @pytest.fixture
-    def universal_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
+    def universal_infrastructure_block(
+        self, mock_pulumi, mock_pulumi_config, universal_config
+    ):
         universal_infra_block = CreateUniversal(universal_config)
         return universal_infra_block
 
@@ -25,8 +25,10 @@ class TestCreateEcrResource:
         )
         return ecr_resource_block
 
-    @pytest.mark.usefixtures("ecr_resource_block")
-    def test_instantiate_create_ecr_resource(self, ecr_resource_block):
+    @pytest.mark.usefixtures("ecr_resource_block", "universal_config")
+    def test_instantiate_create_ecr_resource(
+        self, ecr_resource_block, universal_config
+    ):
         assert ecr_resource_block.config == universal_config
         assert ecr_resource_block.repo_name == "test-repo"
 
@@ -51,7 +53,7 @@ class TestCreateEcrResource:
     ):
         ecr_resource_block.export()
         assert pulumi_export.call_args_list == [
-            call("ecr_repository_test-repo_arn", ANY),
-            call("ecr_repository_test-repo_id", ANY),
-            call("ecr_repository_test-repo_url", ANY),
+            call("ecr-repository-test-repo-arn", ANY),
+            call("ecr-repository-test-repo-id", ANY),
+            call("ecr-repository-test-repo-url", ANY),
         ]
