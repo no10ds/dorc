@@ -7,7 +7,7 @@ import json
 from utils.config import UniversalConfig, Config
 from infrastructure.core.models.definition import (
     PipelineDefinition,
-    CloudwatchCronTrigger,
+    CronTrigger,
 )
 
 from pulumi.runtime.mocks import MockCallArgs, MockResourceArgs
@@ -35,11 +35,11 @@ def mock_pulumi_config():
 
 
 @pytest.fixture
-def universal_config() -> UniversalConfig:
+def universal_config(monkeypatch) -> UniversalConfig:
+    monkeypatch.setenv("CONFIG_REPO_PATH", "./tests/mock_config_repo_src")
     return UniversalConfig(
         region="eu-west-2",
         project="test-pipelines",
-        config_repo_path="./tests/mock_config_repo_src",
         tags={"tag": "test"},
     )
 
@@ -60,7 +60,5 @@ def pipeline_definition() -> PipelineDefinition:
         file_path="tests/mock_config_repo_src/src/layer/test/__main__.py",
         description="Test pipeline description",
         functions=[],
-        cloudwatch_trigger=CloudwatchCronTrigger(
-            name="test-pipeline-cron", cron="cron(0/6 * * * ? *)"
-        ),
+        trigger=CronTrigger(name="test-pipeline-cron", cron="cron(0/6 * * * ? *)"),
     )

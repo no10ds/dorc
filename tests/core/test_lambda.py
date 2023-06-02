@@ -7,7 +7,7 @@ import pulumi_aws as aws
 from infrastructure.core._lambda import CreatePipelineLambdaFunction
 from infrastructure.core.creator import CreatePipeline
 
-from tests.utils import MockedEcrAuthentication
+from tests.mock import MockedEcrAuthentication
 
 
 class TestCreateLambda:

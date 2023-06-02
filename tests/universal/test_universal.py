@@ -12,14 +12,6 @@ class TestCreateUniversal:
         universal_block = CreateUniversal(universal_config)
         assert universal_block.config == universal_config
 
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
-    def test_cannot_create_universal_without_config_repo_env(
-        self, mock_pulumi, mock_pulumi_config
-    ):
-        del os.environ["CONFIG_REPO_PATH"]
-        with pytest.raises(CannotFindEnvironmentVariableException):
-            CreateUniversal(universal_config)
-
     @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "universal_config")
     def test_retrieve_repo_list_from_folders(
         self, mock_pulumi, mock_pulumi_config, universal_config

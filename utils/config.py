@@ -4,16 +4,36 @@ from typing import Optional
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi import Output
 
+from utils.exceptions import (
+    CannotFindEnvironmentVariableException,
+)
+
 
 class UniversalConfig(BaseModel):
     region: str
     project: str
     tags: Optional[dict] = dict()
     source_code_folder: Optional[str] = "src"
+    config_repo_path: Optional[str] = None
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.config_repo_path = self.evaluate_environment_variable_input(
+            "CONFIG_REPO_PATH"
+        )
+
+    def evaluate_environment_variable_input(self, environment_variable: str):
+        value = os.getenv(environment_variable)
+        if not value:
+            raise CannotFindEnvironmentVariableException(
+                f"No environment variable found for {environment_variable}"
+            )
+        return value
 
     @property
     def source_code_path(self) -> str:
         return os.path.join(self.config_repo_path, self.source_code_folder)
+
 
 class Config(BaseModel):
     universal: UniversalConfig

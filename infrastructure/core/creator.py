@@ -1,8 +1,11 @@
 import glob
 import os
 import re
+from checksumdir import dirhash
 
 import pulumi
+from pulumi import ResourceOptions
+import pulumi_docker as docker
 from pulumi_aws.lambda_ import Function
 from pydantic import ValidationError
 
@@ -113,35 +116,6 @@ class CreatePipeline(CreateInfrastructureBlock):
     def lambda_function_paths(self):
         return pulumi.Output.from_input(
             [lambda_path for lambda_path in self.fetch_lambda_paths()]
-
-    def apply_docker_image_build_and_push(
-        self, url: str, lambda_name: str, root: str
-    ) -> Image:
-        code_path = self.extract_lambda_source_dir_from_top_dir(root)
-        code_hash = dirhash(root)
-        image = f"{url}:{lambda_name}_{code_hash}"
-
-        # TODO: Do we want this path as a configuration object?
-        dockerfile = f"{self.config_repo_path}/src/Dockerfile"
-
-        return docker.Image(
-            resource_name=f"{self.pipeline_name}_{lambda_name}_image",
-            build=docker.DockerBuildArgs(
-                dockerfile=dockerfile,
-                platform="linux/amd64",
-                args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
-                builder_version="BuilderBuildKit",
-                context=self.config_repo_path,
-                cache_from=docker.CacheFromArgs(images=[image]),
-            ),
-            image_name=image,
-            skip_push=False,
-            registry=docker.RegistryArgs(
-                server=url,
-                password=self.registry_info.password,
-                username=self.registry_info.user_name,
-            ),
-            opts=ResourceOptions(self.aws_provider),
         )
 
     def apply_lambda_function(self, lambda_path: str) -> CreatePipelineLambdaFunction:

@@ -1,18 +1,18 @@
-boto3
-pulumi
-pulumi_aws
-pulumi_docker
-pulumi-terraform
-python-dotenv
-pydantic
-pylint
-gitpython
-checksumdir
-typeguard
-pytest
-pytest-cov
-mock
-mkdocs
-mkdocs-material
 -e .
--e ../10ds-core-pipelines-config
+-e ${CONFIG_REPO_PATH}
+boto3==1.26.145
+checksumdir==1.2.0
+gitpython==3.1.31
+mkdocs==1.4.3
+mkdocs-material==9.1.14
+mock==5.0.2
+pulumi==3.68.0
+pulumi_aws==5.41.0
+pulumi_docker==4.2.3
+pulumi-terraform==5.12.2
+pydantic==1.10.8
+pylint==2.17.4
+pytest==7.3.1
+pytest-cov==4.1.0
+python-dotenv==1.0.0
+typeguard==4.0.0
