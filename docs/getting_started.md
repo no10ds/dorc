@@ -52,6 +52,7 @@ For a *dorc* project we would reference this structure within the `src` folder l
             /raw
             /processed
             /curated
+        Dockerfile
 ```
 
 See further [reading](https://medium.com/codex/data-pipeline-architecture-variety-of-ways-you-can-build-your-data-pipeline-66b3dd456df1) if unsure on a typical data engineering structure.
@@ -81,6 +82,20 @@ See the description and a example for each of the variables below
 * UNIVERSAL_STACK_NAME - The folder location & name of the infrastructure stack that the universal infrastructure will be deployed too. **We recommend leaving this as *universal* if possible**.
 * INFRA_STACK_NAME - The folder location & name of the infrastructure stack that the infra infrastructure will be deployed too. **We recommend leaving this as *infra* if possible**.
 * PULUMI_CONFIG_PASSPHRASE -
+
+## Dockerfile
+
+*dorc* builds all function code into Docker images and uses these images to deploy serverless lambda functions. The context of the Dockerfile can be set to the following
+
+```Dockerfile
+FROM amazon/aws-lambda-python:3.9
+
+ARG CODE_PATH
+
+COPY ${CODE_PATH}/* ${LAMBDA_TASK_ROOT}/
+
+CMD [ "lambda.handler" ]
+```
 
 ## Setup
 
@@ -115,7 +130,6 @@ from infrastructure.universal import CreateUniversal
 config = UniversalConfig(
     region="eu-west-2",
     project="ExampleDorc",
-    config_repo_path="../private-source-code",
     tags={"project": "example-dorc"},
 )
 

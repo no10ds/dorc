@@ -6,7 +6,7 @@ from infrastructure.core.event_bridge import (
     CreateEventBridgeRule,
     CreateEventBridgeTarget,
 )
-from infrastructure.core.models.definition import CloudwatchS3Trigger
+from infrastructure.core.models.definition import S3Trigger
 from infrastructure.core.creator import CreatePipeline
 
 
@@ -30,7 +30,7 @@ class TestCreateEventBridgeRule:
             pipeline_infrastructure_block.config,
             pipeline_infrastructure_block.aws_provider,
             pipeline_infrastructure_block.environment,
-            pipeline_infrastructure_block.pipeline_definition.cloudwatch_trigger,
+            pipeline_infrastructure_block.pipeline_definition.trigger,
         )
         return event_bridge_rule_resource_block
 
@@ -83,7 +83,7 @@ class TestCreateEventBridgeRule:
             )
             assert schedule_expression is None
 
-        event_bridge_rule_resource_block.cloudwatch_trigger = CloudwatchS3Trigger(
+        event_bridge_rule_resource_block.trigger = S3Trigger(
             name="test-trigger", bucket_name="test-bucket", key_prefix="test-key"
         )
         event_bridge_rule = (
@@ -117,7 +117,7 @@ class TestCreateEventBridgeTarget:
             pipeline_infrastructure_block.aws_provider,
             pipeline_infrastructure_block.environment,
             "test-pipeline",
-            pipeline_infrastructure_block.pipeline_definition.cloudwatch_trigger,
+            pipeline_infrastructure_block.pipeline_definition.trigger,
             "test-event-bridge-rule",
             "test:cloudwatch:role:arn",
             "test:state:machine:arn",

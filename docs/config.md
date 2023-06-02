@@ -10,7 +10,6 @@ from utils.config import UniversalConfig
 UniversalConfig(
     region: str
     project: str
-    config_repo_path: str
     tags: Optional[dict]
     source_code_folder: Optional[str] = "src"
 )
@@ -18,7 +17,6 @@ UniversalConfig(
 
 * `region` - The aws region in which all infrastructure will be deployed to
 * `project` - Your high level project name
-* `config_repo_path` - Relevant path from the *dorc* repository to your private source code repository
 * `tags` - An optional dictionary of key-value tags to apply to every resource created
 * `source_code_folder` - The name of the folder within your private source repository that the pipeline definitions are saved. This value defaults to `src`
 

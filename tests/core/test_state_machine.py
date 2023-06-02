@@ -1,3 +1,4 @@
+import boto3
 import json
 from mock import MagicMock
 import pytest
@@ -189,7 +190,6 @@ class TestCreateStateMachine:
         )
         assert json.loads(res) == expected
 
-    @pytest.mark.usefixtures("state_machine_resource_block")
     def test_fetch_step_function_arn_from_name(self, state_machine_resource_block):
         with pytest.raises(PipelineDoesNotExistException):
             state_machine_resource_block.fetch_step_function_arn_from_name(

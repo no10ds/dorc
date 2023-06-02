@@ -8,7 +8,6 @@ from pulumi import Output
 class UniversalConfig(BaseModel):
     region: str
     project: str
-    config_repo_path: str
     tags: Optional[dict] = dict()
     source_code_folder: Optional[str] = "src"
 

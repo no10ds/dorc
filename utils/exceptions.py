@@ -8,3 +8,7 @@ class EnvironmentRequiredException(Exception):
 
 class PipelineDoesNotExistException(Exception):
     pass
+
+  
+class CannotFindEnvironmentVariableException(Exception):
+    pass

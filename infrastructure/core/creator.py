@@ -66,7 +66,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.config,
             self.aws_provider,
             self.environment,
-            self.pipeline_definition.cloudwatch_trigger,
+            self.pipeline_definition.trigger,
         )
 
     def get_lambda_role_arn(self):
@@ -98,7 +98,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             lambda state_machine_outputs: self.apply_cloudwatch_state_machine_trigger(
                 state_machine_outputs
             )
-            if self.pipeline_definition.cloudwatch_trigger is not None
+            if self.pipeline_definition.trigger is not None
             else None
         )
 
@@ -113,6 +113,35 @@ class CreatePipeline(CreateInfrastructureBlock):
     def lambda_function_paths(self):
         return pulumi.Output.from_input(
             [lambda_path for lambda_path in self.fetch_lambda_paths()]
+
+    def apply_docker_image_build_and_push(
+        self, url: str, lambda_name: str, root: str
+    ) -> Image:
+        code_path = self.extract_lambda_source_dir_from_top_dir(root)
+        code_hash = dirhash(root)
+        image = f"{url}:{lambda_name}_{code_hash}"
+
+        # TODO: Do we want this path as a configuration object?
+        dockerfile = f"{self.config_repo_path}/src/Dockerfile"
+
+        return docker.Image(
+            resource_name=f"{self.pipeline_name}_{lambda_name}_image",
+            build=docker.DockerBuildArgs(
+                dockerfile=dockerfile,
+                platform="linux/amd64",
+                args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
+                builder_version="BuilderBuildKit",
+                context=self.config_repo_path,
+                cache_from=docker.CacheFromArgs(images=[image]),
+            ),
+            image_name=image,
+            skip_push=False,
+            registry=docker.RegistryArgs(
+                server=url,
+                password=self.registry_info.password,
+                username=self.registry_info.user_name,
+            ),
+            opts=ResourceOptions(self.aws_provider),
         )
 
     def apply_lambda_function(self, lambda_path: str) -> CreatePipelineLambdaFunction:
@@ -137,7 +166,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.state_machine_role_arn,
         )
 
-    def apply_cloudwatch_state_machine_trigger(
+    def apply_state_machine_trigger(
         self, state_machine_outputs: CreatePipelineStateMachine.Output
     ):
         self.cloudevent_bridge_rule.exec()
