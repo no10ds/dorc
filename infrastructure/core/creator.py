@@ -156,7 +156,6 @@ class CreatePipeline(CreateInfrastructureBlock):
         )
         cloudevent_bridge_target.exec()
 
-    # TODO: Test this
     def generate_pipeline_name_from_directory(self):
         path = self.pipeline_definition.file_path
         matcher = f"{self.config.config_repo_path}/src"
