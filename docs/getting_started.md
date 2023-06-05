@@ -43,7 +43,7 @@ If you don't require anymore than one environment we recommend calling this `pro
 
 We recommend building your *dorc* project with the concept of data pipeline layers in mind. A typical first layer is to take data from a raw source and clean into a standardised form. A typical second layer might be taking this cleaned data and performing aggregations or filters to produce a processed layer. We could then join together multiple processed datasets into richer curated sources.
 
-For a *dorc* project we would reference this structure within the `src` folder like the following, note that example is typically the high level name of the specific pipeline you are willing to create
+For a *dorc* project we would reference this structure within the `src` folder like the following, note that example is typically the high level name of the specific pipeline you are willing to create.
 
 ```
 /private-source-code

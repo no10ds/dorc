@@ -11,7 +11,6 @@ PipelineDefinition(
     functions: list[Function]
     trigger: Optional[S3Trigger | CronTrigger]
 )
-```
 
 * `file_path` - The releative path to the pipeline `__main__.py` file. It is advised to use the python `__file__` operator for this value
 * `description` - Optional description used to describe this pipeline
