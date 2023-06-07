@@ -1,4 +1,4 @@
-*dorc* exposes the ability to clearly define complex data pipelines in Python code. The pipeline definition model is defined as a Pydantic model and is passed into the create pipeline instance.
+The PipelineDefinition class allows you to configure your pipelines in Python code. It is passed into the create pipeline instance to create your pipeline.
 
 ## Pipeline Definition
 
@@ -12,10 +12,12 @@ PipelineDefinition(
     trigger: Optional[S3Trigger | CronTrigger]
 )
 
-* `file_path` - The releative path to the pipeline `__main__.py` file. It is advised to use the python `__file__` operator for this value
-* `description` - Optional description used to describe this pipeline
-* `functions` - List of pipeline `Function` that will define the structure
-* `trigger` - Optional aws trigger that can be used to start the pipeline, choice between a `S3Trigger` or `CronTrigger`
+```
+
+- `file_path` - The relative path to the pipeline `__main__.py` file. Set this to `__file__`.
+- `description` - Optional description used to describe this pipeline.
+- `functions` - A list of `Function` definitions that will define the content of the pipeline.
+- `trigger` - An optional AWS trigger to start the pipeline, can be one of an `S3Trigger` or `CronTrigger`.
 
 ## Function
 
@@ -45,7 +47,7 @@ NextFunction(
 ```
 
 * `name` - The string name of the next funtion to trigger (this must match the name of a relevant folder name under `../src`)
-* `type` - The type of function we wish to trigger next. This is an optional value that defaults to a function but it is possible to trigger another seperate pipeline instead of a function.
+* `type` - The type of function we wish to trigger next. This is an optional value that defaults to a function but it is possible to trigger another pipeline instead of a function.
 
 #### Trigger Function
 
@@ -54,42 +56,38 @@ In this example we use the definition to trigger another serverless function
 ```python
 from infrastructure.core.models.definition import Function, NextFunction, NextFunctionTypes
 
-next_function = NextFunction(
-    name: "census_processing_upload",
-    type: NextFunctionTypes.FUNCTION
-)
-
 Function(
     name="census_processing_raw",
-    next_function=next_function
+    next_function=NextFunction(
+        name="census_processing_upload",
+        type=NextFunctionTypes.FUNCTION
+    )
 )
 ```
 
 #### Trigger Pipeline
 
-Unlike the example above instead of triggering another function within our pipeline we wish to trigger a completely separate pipeline. This example assumes another pipeline exists with the name *train_census_model* that could for instance take the raw census data and train a model through it.
+In this example we use the definition to trigger another pipeline  with the name `census_processing_raw`.
 
 ```python
 from infrastructure.core.models.definition import Function, NextFunction, NextFunctionTypes
 
-next_function = NextFunction(
-    name: "train_census_model",
-    type: NextFunctionTypes.PIPELINE
-)
-
 Function(
     name="census_processing_raw",
-    next_function=next_function
+    next_function=NextFunction(
+        name="train_census_model",
+        type=NextFunctionTypes.PIPELINE
+    )
 )
 ```
 
 ## Trigger
 
-We can optionally set triggers on our pipeline that based on the condition will automatically run our pipeline.
+We can optionally set triggers on our pipeline that will start the pipeline based on certain events.
 
 ### S3 Trigger
 
-As *dorc* is built upon aws we can trigger a pipeline on a new object being placed within a S3 bucket. This is useful to run pipelines automatically on new data entering some area.
+The S3 Trigger will launch the pipeline when a file landas the specified location in S3. This is useful to run pipelines automatically on new data landing in S3.
 
 ```python
 from infrastructure.core.models.definition import S3Trigger
@@ -105,9 +103,9 @@ S3Trigger(
 * `bucket_name` - Name of the S3 bucket to create the trigger for
 * `key_prefix` - Path within the S3 bucket to filter for new files landing. If you wish to trigger the pipeline for every new file use the string `"/"`
 
-### cron Trigger
+### Cron Trigger
 
-You can periodically trigger your pipeline to run at defined times using a aws cron expression. This is useful if you are pulling data from a api and wish for it to be refreshed at some given cadence.
+The CronTrigger allows you to trigger the pipeline at defined times. This is useful if you are pulling data from an API and wish for it to be refreshed at a regular cadence.
 
 ```python
 from infrastructure.core.models.definition import CronTrigger

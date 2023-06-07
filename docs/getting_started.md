@@ -1,19 +1,19 @@
-To get started with deploying a new data orchestration project with *dorc* follow the guide below.
+To deploy a new data orchestration project with *dorc*, follow the guide below.
 
 ## Prerequisites
 
 Before you get started with *dorc* you will need to ensure the following are setup before
 
-* AWS - *dorc* is built upon AWS and therefore requires a valid AWS environment setup and with the relevant cli access permissions. We recommend using [aws-vault](https://github.com/99designs/aws-vault) as a way to securely handle AWS credentials.
-* pyenv - *dorc* uses [pyenv](https://github.com/pyenv/pyenv) to ensure the relevant version of Python is running.
-* Pulumi - Pulumi is used to deploy all the infrastructure programmatically. See the [documentation](https://www.pulumi.com/docs/install/) on how to install Pulumi based on your relevant platform.
+* AWS - AWS is used to create the cloud infrastructure, you therefore require an AWS environment with the relevant access and permissions. We recommend using [aws-vault](https://github.com/99designs/aws-vault) as a way of securely handling AWS credentials.
+* pyenv - [pyenv](https://github.com/pyenv/pyenv) is used to install and manage the Python.
+* Pulumi - Pulumi is used to deploy all the infrastructure programmatically. See the [documentation](https://www.pulumi.com/docs/install/) on how to install Pulumi.
 
 ## Folder Structure
 
-The recommended folder structure of a new *dorc* project is below. Within a root directory of your choosing you would have the most recent *dorc* project cloned alongside your pipeline config repository.
+The folder structure for setting up *dorc* is shown below. Within a directory of your choice, you will need to clone the *dorc* repo, alongside your pipeline config repository.
 
 ```
-/root
+/<directory>
     /dorc
     /pipeline-config
         /universal
@@ -23,7 +23,7 @@ The recommended folder structure of a new *dorc* project is below. Within a root
 
 ## Pipeline Config Repository
 
-*dorc* is designed to be run alongside your pipeline config repository where all your unique pipeline definition and configuration sits.
+The pipeline config repository is where your unique pipeline definition and configuration sits.
 
 There is however a requirement on the folder structure of this private repository. A typical structure is seen above with the three different folders.
 
@@ -35,7 +35,9 @@ Typically once a project is setup you would expect the bulk of the code changes 
 
 ### Environments
 
-Just like any standard software we recommend running your *dorc* project in multiple environments. *dorc* allows for all your data orchestration to be replicated across different environments of your choosing. The only deployment in *dorc* that is environment agnostic is the universal infrastructure.
+Just like any standard software we recommend running your project in multiple environments. *dorc* allows for all of your data orchestration to be replicated across different environments of your choosing.
+
+The only deployment in *dorc* that is environment agnostic is the universal infrastructure.
 
 ### Layers
 
@@ -76,14 +78,14 @@ See the description and a example for each of the variables below
 
 * AWS_ACCOUNT - AWS Account ID, for more details see [here](https://docs.aws.amazon.com/signin/latest/userguide/FindingYourAWSId.html)
 * AWS_REGION - The AWS specific region in which to deploy all the infrastructure too
-* CONFIG_REPO_PATH - The directory path that points to your pipeline config folder. For the recommended structure above this value would be `../pipeline-config`
-* UNIVERSAL_STACK_NAME - The folder location & name of the infrastructure stack that the universal infrastructure will be deployed too. **We recommend leaving this as *universal* if possible**.
-* INFRA_STACK_NAME - The folder location & name of the infrastructure stack that the infra infrastructure will be deployed too. **We recommend leaving this as *infra* if possible**.
+* CONFIG_REPO_PATH - The relative path to your pipeline-config repo from your local dorc repo. For the recommended structure above this value would be `../pipeline-config`
+* UNIVERSAL_STACK_NAME - The folder location & name of the infrastructure stack that the universal infrastructure will be deployed too. *Default value is: universal*
+* INFRA_STACK_NAME - The folder location & name of the infrastructure stack that the infra infrastructure will be deployed too. *Default value is: infra*
 * PULUMI_CONFIG_PASSPHRASE -
 
 ## Dockerfile
 
-*dorc* builds all function code into Docker images and uses these images to deploy serverless lambda functions. The context of the Dockerfile can be set to the following
+Docker is used to store and the code as images which are then deployed to serverless lambda functions. The Dockerfile can be set to the following:
 
 ```Dockerfile
 FROM amazon/aws-lambda-python:3.9
@@ -97,7 +99,7 @@ CMD [ "lambda.handler" ]
 
 ## Setup
 
-All of the commands used within a *dorc* project are exposed as Make commands. Perform the following sequence to get started
+All of the commands used within *dorc* are exposed as `Make` commands. Perform the following sequence to get started
 
 1. `make python-setup` - Installs the relevant Python version using pyenv
 2. `make venv` - Creates the Python virtual environment and installs all relevant packages
