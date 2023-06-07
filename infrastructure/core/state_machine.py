@@ -31,22 +31,22 @@ class CreatePipelineStateMachine(CreateResourceBlock):
         environment: str | None,
         pipeline_name: str,
         pipeline_definition: PipelineDefinition,
-        lambdas_dict: list[Function],
+        lambda_name_to_arn_map: dict,
         state_machine_role,
         step_functions_client=boto3.client("stepfunctions"),
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.pipeline_name = pipeline_name
         self.pipeline_definition = pipeline_definition
-        self.lambdas_dict = lambdas_dict
+        self.lambda_name_to_arn_map = lambda_name_to_arn_map
         self.state_machine_role = state_machine_role
         self.project = self.config.project
         self.step_functions_client = step_functions_client
 
     def apply(self) -> Output:
-        state_machine_definition = pulumi.Output.from_input(self.lambdas_dict).apply(
-            lambda arns: self.create_state_machine_definition(arns)
-        )
+        state_machine_definition = pulumi.Output.from_input(
+            self.lambda_name_to_arn_map
+        ).apply(lambda arns: self.create_state_machine_definition(arns))
         name = f"{self.project}-{self.environment}-{self.pipeline_name}"
         state_machine = aws.sfn.StateMachine(
             resource_name=name,
@@ -88,7 +88,7 @@ class CreatePipelineStateMachine(CreateResourceBlock):
             states_map[pipeline.name] = _map
 
         start_function_name = self.pipeline_definition.functions[0].name
-        # TODO: Define this comment in the wider configuration passed into class
+
         return f"""{{
             "Comment": "{self.pipeline_definition.description}",
             "StartAt": "{start_function_name}",

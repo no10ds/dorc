@@ -27,7 +27,6 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
         code_path: str,
     ) -> None:
         super().__init__(config, aws_provider, environment)
-        self.config = config
         self.project = self.config.project
         self.universal_stack_reference = universal_stack_reference
         self.lambda_role = lambda_role
@@ -35,7 +34,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
         self.code_path = code_path
 
     def authenticate_to_ecr_repo(self) -> aws.ecr.GetAuthorizationTokenResult:
-        ecr_repo_id_output = self.universal_stack_reference.get_output(
+        ecr_repo_id_output = self.universal_stack_reference.require_output(
             CreateEcrResource.create_repository_id_export_key(self.function_name)
         )
         return ecr_repo_id_output.apply(
