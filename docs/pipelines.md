@@ -7,7 +7,7 @@ As previously mentioned a pipeline consists of a high level name, the layer for 
 Say we have a data source, the census, that we can pull in raw from an api and want to manipulate in certain ways so it is compatiable with a machine learning model we have deployed later in our processes. We can setup the *dorc* pipeline structure as the following
 
 ```
-/private-source-code
+/pipeline-config
     /src
         /census
             /raw

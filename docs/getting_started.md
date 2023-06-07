@@ -1,29 +1,29 @@
-To get started with deploying a new data orchestration project with *dorc* follow the guide below.
+To deploy a new data orchestration project with *dorc*, follow the guide below.
 
 ## Prerequisites
 
 Before you get started with *dorc* you will need to ensure the following are setup before
 
-* AWS - *dorc* is built upon AWS and therefore requires a valid AWS environment setup and with the relevant cli access permissions. We recommend using [aws-vault](https://github.com/99designs/aws-vault) as a way to securely handle AWS credentials.
-* pyenv - *dorc* uses [pyenv](https://github.com/pyenv/pyenv) to ensure the relevant version of Python is running.
-* Pulumi - See the [documentation](https://www.pulumi.com/docs/install/) on how to install Pulumi based on your relevant platform.
+* AWS - AWS is used to create the cloud infrastructure, you therefore require an AWS environment with the relevant access and permissions. We recommend using [aws-vault](https://github.com/99designs/aws-vault) as a way of securely handling AWS credentials.
+* pyenv - [pyenv](https://github.com/pyenv/pyenv) is used to install and manage the Python.
+* Pulumi - Pulumi is used to deploy all the infrastructure programmatically. See the [documentation](https://www.pulumi.com/docs/install/) on how to install Pulumi.
 
 ## Folder Structure
 
-The recommended folder structure of a new *dorc* project is below. Within a root directory of your choosing you would have the most recent *dorc* project cloned alongside your private source code repository.
+The folder structure for setting up *dorc* is shown below. Within a directory of your choice, you will need to clone the *dorc* repo, alongside your pipeline config repository.
 
 ```
-/root
+/<directory>
     /dorc
-    /private-source-code
+    /pipeline-config
         /universal
         /infra
         /src
 ```
 
-## Private Source Code Repository
+## Pipeline Config Repository
 
-*dorc* is designed to be run alongside your private source code repository where all your unique pipeline and configuration sits.
+The pipeline config repository is where your unique pipeline definition and configuration sits.
 
 There is however a requirement on the folder structure of this private repository. A typical structure is seen above with the three different folders.
 
@@ -35,18 +35,18 @@ Typically once a project is setup you would expect the bulk of the code changes 
 
 ### Environments
 
-Just like any standard software we recommend running your *dorc* project in multiple environments. A typical setup is to have a `dev`, `preprod` and `prod` environment. The software moves along these environments sequentially, tested in each environment before reaching production. *dorc* allows for all your data orchestration to be replicated across different environments of your choosing. The only deployment in *dorc* that is environment agnostic is the universal infrastructure.
+Just like any standard software we recommend running your project in multiple environments. *dorc* allows for all of your data orchestration to be replicated across different environments of your choosing.
 
-If you don't require anymore than one environment we recommend calling this `prod`.
+The only deployment in *dorc* that is environment agnostic is the universal infrastructure.
 
 ### Layers
 
 We recommend building your *dorc* project with the concept of data pipeline layers in mind. A typical first layer is to take data from a raw source and clean into a standardised form. A typical second layer might be taking this cleaned data and performing aggregations or filters to produce a processed layer. We could then join together multiple processed datasets into richer curated sources.
 
-For a *dorc* project we would reference this structure within the `src` folder like the following, note that example is typically the high level name of the specific pipeline you are willing to create
+For a *dorc* project we would reference this structure within the `src` folder like the following, note that example is typically the high level name of the specific pipeline you are willing to create.
 
 ```
-/private-source-code
+/pipeline-config
     /src
         /example
             /raw
@@ -78,14 +78,14 @@ See the description and a example for each of the variables below
 
 * AWS_ACCOUNT - AWS Account ID, for more details see [here](https://docs.aws.amazon.com/signin/latest/userguide/FindingYourAWSId.html)
 * AWS_REGION - The AWS specific region in which to deploy all the infrastructure too
-* CONFIG_REPO_PATH - The directory path that points to your private source code folder. For the recommended structure above this value would be `../private-source-code`
-* UNIVERSAL_STACK_NAME - The folder location & name of the infrastructure stack that the universal infrastructure will be deployed too. **We recommend leaving this as *universal* if possible**.
-* INFRA_STACK_NAME - The folder location & name of the infrastructure stack that the infra infrastructure will be deployed too. **We recommend leaving this as *infra* if possible**.
+* CONFIG_REPO_PATH - The relative path to your pipeline-config repo from your local dorc repo. For the recommended structure above this value would be `../pipeline-config`
+* UNIVERSAL_STACK_NAME - The folder location & name of the infrastructure stack that the universal infrastructure will be deployed too. *Default value is: universal*
+* INFRA_STACK_NAME - The folder location & name of the infrastructure stack that the infra infrastructure will be deployed too. *Default value is: infra*
 * PULUMI_CONFIG_PASSPHRASE -
 
 ## Dockerfile
 
-*dorc* builds all function code into Docker images and uses these images to deploy serverless lambda functions. The context of the Dockerfile can be set to the following
+Docker is used to store and the code as images which are then deployed to serverless lambda functions. The Dockerfile can be set to the following:
 
 ```Dockerfile
 FROM amazon/aws-lambda-python:3.9
@@ -99,13 +99,12 @@ CMD [ "lambda.handler" ]
 
 ## Setup
 
-All of the commands used within a *dorc* project are exposed as Make commands. Perform the following sequence to get started
+All of the commands used within *dorc* are exposed as `Make` commands. Perform the following sequence to get started
 
 1. `make python-setup` - Installs the relevant Python version using pyenv
 2. `make venv` - Creates the Python virtual environment and installs all relevant packages
 3. `. .venv/bin/activate` - Activate the virtual environment
-4. `pip install -e ../private-source-code` - It is also recommended to install your python private source code repository into the virtual environment so common modules are found
-5. `make infra/init` - Initialise the Pulumi infrastructure. You will need to ensure you have the relevant aws access available within the shell
+4. `make infra/init` - Initialise the Pulumi infrastructure. You will need to ensure you have the relevant aws access available within the shell
 
 ## Universal Infrastructure
 
@@ -114,7 +113,7 @@ Using the same folder structure as previously mentioned and with the `UNIVERSAL_
 Create a `__main__.py` within the universal folder (or the name you specified in the `UNIVERSAL_STACK_NAME` environment variable). Then create a `Pulumi.universal.yaml` in the same directory.
 
 ```
-/private-source-code
+/pipeline-config
     /universal
         __main__.py
         Pulumi.universal.yaml
@@ -137,36 +136,35 @@ universal_infrastructure_creator = CreateUniversal(config)
 universal_infrastructure_creator.apply()
 ```
 
-Now under the *dorc* repository and in the virtual environment created by *dorc*, we apply the universal infrastructure using the common *dorc* `infra/apply` command.
+In the *dorc* repository and in the virtual environment created by *dorc*, we apply the universal infrastructure using the common *dorc* `infra/apply` command.
 
 ```
 make infra/apply instance=universal
 ```
 
-TODO - Link this to further documentation on the infra/apply command
 
 ## Infra Infrastructure
 
-Building on the universal setup we now want to apply the environment specific environment. For this guide we are only dealing with a **prod** environment but it can easily extended to whatever environments you require.
+Building on the universal setup we now want to apply the environment specific environment.
 
 Create the folder that you specified for the `INFRA_STACK_NAME` and the required `__main__.py` file. For every environment you wish to create you will need to create a relevant `Pulumi.{env}.yaml` file.
 
 ```
-/private-source-code
+/pipeline-config
     /universal
         .
         .
         .
     /infra
         __main__.py
-        Pulumi.prod.yaml
+        Pulumi.{env}.yaml
 ```
 
-Within the `Pulumi.prod.yaml` we need to set the environment configuration variable
+Within the `Pulumi.{env}.yaml` we need to set the environment configuration variable
 
 ```yaml
 config:
-  environment: prod
+  environment: env
 ```
 
 Now we can create and apply the *dorc* python code within the `__main__.py`
