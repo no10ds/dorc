@@ -4,7 +4,7 @@
 
 ## Overview
 
-For a *dorc* projet, place the dorc repository alongside your pipeline config repository in your organization's source control. The *dorc* repository contains code for infrastructure deployment and Python models for pipeline definition. Separate your pipeline and configuration code in another repository passed to *dorc*.
+For a *dorc* project, place the dorc repository alongside your pipeline config repository. The *dorc* repository contains code for infrastructure deployment and models for config and pipeline definitions.
 
 The visual representation below depicts a typical *dorc* setup, illustrating the above description.
 
