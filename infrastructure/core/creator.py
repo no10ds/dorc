@@ -69,7 +69,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.config,
             self.aws_provider,
             self.environment,
-            self.pipeline_definition.cloudwatch_trigger,
+            self.pipeline_definition.trigger,
         )
 
     def get_lambda_role_arn(self):
@@ -85,7 +85,7 @@ class CreatePipeline(CreateInfrastructureBlock):
 
     def fetch_source_directory_name(self):
         top_dir = os.path.dirname(self.pipeline_definition.file_path)
-        return os.path.abspath(os.path.join(top_dir, self.config.source_code_path))
+        return os.path.abspath(os.path.join(top_dir, self.config.source_code_folder))
 
     def apply(self):
         self.authenticate_to_ecr_repo()
@@ -96,10 +96,10 @@ class CreatePipeline(CreateInfrastructureBlock):
         ecr_repo_url_output.apply(
             lambda url: self.build_and_deploy_folder_structure_functions(url)
         ).apply(lambda _: self.apply_state_machine().apply()).apply(
-            lambda state_machine_outputs: self.apply_cloudwatch_state_machine_trigger(
+            lambda state_machine_outputs: self.apply_state_machine_trigger(
                 state_machine_outputs
             )
-            if self.pipeline_definition.cloudwatch_trigger is not None
+            if self.pipeline_definition.trigger is not None
             else None
         )
 
@@ -122,7 +122,7 @@ class CreatePipeline(CreateInfrastructureBlock):
         image = f"{url}:{lambda_name}_{code_hash}"
 
         # TODO: Do we want this path as a configuration object?
-        dockerfile = f"{os.getenv('CONFIG_REPO_PATH')}/src/Dockerfile"
+        dockerfile = f"{self.config_repo_path}/src/Dockerfile"
 
         return docker.Image(
             resource_name=f"{self.pipeline_name}_{lambda_name}_image",
@@ -131,7 +131,7 @@ class CreatePipeline(CreateInfrastructureBlock):
                 platform="linux/amd64",
                 args={"CODE_PATH": code_path, "BUILDKIT_INLINE_CACHE": "1"},
                 builder_version="BuilderBuildKit",
-                context=os.getenv("CONFIG_REPO_PATH"),
+                context=self.config_repo_path,
                 cache_from=docker.CacheFromArgs(images=[image]),
             ),
             image_name=image,
@@ -167,7 +167,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.state_machine_role_arn,
         )
 
-    def apply_cloudwatch_state_machine_trigger(
+    def apply_state_machine_trigger(
         self, state_machine_outputs: CreatePipelineStateMachine.Output
     ):
         self.cloudevent_bridge_rule.exec()
@@ -206,7 +206,7 @@ class CreatePipeline(CreateInfrastructureBlock):
 
     def generate_pipeline_name_from_directory(self):
         path = self.pipeline_definition.file_path
-        matcher = f"{self.config.config_repo_path}/src"
+        matcher = f"{self.config_repo_path}/src"
         return (
             re.split(matcher, path)[-1]
             .strip("/")

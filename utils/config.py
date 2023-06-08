@@ -1,14 +1,13 @@
 from typing import Optional
-from pydantic import BaseModel
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi import Output
 
 
 class UniversalConfig(BaseModel):
     region: str
     project: str
-    config_repo_path: str
     tags: Optional[dict] = dict()
-    source_code_path: Optional[str] = "src"
+    source_code_folder: Optional[str] = "src"
 
 
 class Config(BaseModel):

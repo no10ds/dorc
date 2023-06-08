@@ -1,12 +1,12 @@
 import json
 from enum import StrEnum
 from typing import Optional
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator  # pylint: disable=no-name-in-module
 
 from infrastructure.core.models.event_bridge import EventBridge, S3EventBridgeModel
 
 
-class CloudwatchS3Trigger(BaseModel):
+class S3Trigger(BaseModel):
     name: str
     bucket_name: str
     key_prefix: str
@@ -24,7 +24,7 @@ class CloudwatchS3Trigger(BaseModel):
         return None
 
 
-class CloudwatchCronTrigger(BaseModel):
+class CronTrigger(BaseModel):
     name: str
     cron: str
 
@@ -54,10 +54,12 @@ class PipelineDefinition(BaseModel):
     file_path: str
     description: Optional[str] = ""
     functions: list[Function]
-    cloudwatch_trigger: Optional[CloudwatchS3Trigger | CloudwatchCronTrigger] = None
+    trigger: Optional[S3Trigger | CronTrigger] = None
 
     @validator("functions")
-    def check_for_only_one_termination(cls, functions: list[Function]):
+    def check_for_only_one_termination(
+        cls, functions: list[Function]
+    ):  # pylint: disable=no-self-argument
         termination_steps = sum(
             1 for function in functions if function.next_function is None
         )

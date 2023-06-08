@@ -1,8 +1,9 @@
+import os
 import pytest
-import pulumi
 
 from mock import patch, MagicMock, call
 from infrastructure.universal import CreateUniversal
+from utils.exceptions import CannotFindEnvironmentVariableException
 
 from tests.utils import universal_config
 
@@ -14,17 +15,26 @@ class TestCreateUniversal:
         assert universal_block.config == universal_config
 
     @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    def test_cannot_create_universal_without_config_repo_env(
+        self, mock_pulumi, mock_pulumi_config
+    ):
+        del os.environ["CONFIG_REPO_PATH"]
+        with pytest.raises(CannotFindEnvironmentVariableException):
+            CreateUniversal(universal_config)
+
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "./tests/mock_config_repo_src"})
     def test_retrieve_repo_list_from_folders(self, mock_pulumi, mock_pulumi_config):
-        universal_config.source_code_path = "src"
+        universal_config.source_code_folder = "src"
         universal_block = CreateUniversal(universal_config)
         assert universal_block.repo_list == ["test-layer"]
 
     @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
-    def test_retrieve_repo_list_from_folders_different_source_code_path(
+    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "./tests/mock_config_repo"})
+    def test_retrieve_repo_list_from_folders_different_source_code_folder(
         self, mock_pulumi, mock_pulumi_config
     ):
-        universal_config.config_repo_path = "./tests/mock_config_repo"
-        universal_config.source_code_path = ""
+        universal_config.source_code_folder = ""
         universal_block = CreateUniversal(universal_config)
         assert universal_block.repo_list == ["test-layer2"]
 

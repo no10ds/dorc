@@ -12,7 +12,7 @@ class CreateUniversal(CreateInfrastructureBlock):
         self.repo_list = self.retrieve_repo_list_from_folders()
 
     def retrieve_repo_list_from_folders(self) -> list[str]:
-        source_path = f"{self.config.config_repo_path}/{self.config.source_code_path}"
+        source_path = f"{self.config_repo_path}/{self.config.source_code_folder}"
         return [
             dirpath.replace(source_path, "").strip("/").replace("/", "-")
             for dirpath in glob.glob(os.path.join(source_path, "*", "*"))

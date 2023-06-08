@@ -1,10 +1,14 @@
+import os
 import pulumi
 
 from abc import ABC, abstractmethod
-from pydantic import BaseModel
+from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi_aws import Provider
 
-from utils.exceptions import EnvironmentRequiredException
+from utils.exceptions import (
+    EnvironmentRequiredException,
+    CannotFindEnvironmentVariableException,
+)
 from utils.config import Config, UniversalConfig
 from utils.tagging import register_default_tags
 from utils.provider import create_aws_provider
@@ -17,6 +21,9 @@ class CreateInfrastructureBlock(ABC):
         super().__init__()
         self.pulumi_config = pulumi.Config()
         self.config = config
+        self.config_repo_path = self.evaluate_environment_variable_input(
+            "CONFIG_REPO_PATH"
+        )
         register_default_tags(self.config.tags)
         self.aws_provider = create_aws_provider(self.config.region)
 
@@ -26,6 +33,14 @@ class CreateInfrastructureBlock(ABC):
                 raise EnvironmentRequiredException(
                     "You need to set an environment in the Pulumi config"
                 )
+
+    def evaluate_environment_variable_input(self, environment_variable: str):
+        value = os.getenv(environment_variable)
+        if not value:
+            raise CannotFindEnvironmentVariableException(
+                f"No environment variable found for {environment_variable}"
+            )
+        return value
 
     @abstractmethod
     def apply(self):
