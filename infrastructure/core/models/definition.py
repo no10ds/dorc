@@ -3,7 +3,30 @@ from enum import StrEnum
 from typing import Optional
 from pydantic import BaseModel, validator  # pylint: disable=no-name-in-module
 
-from infrastructure.core.models.event_bridge import EventBridge, S3EventBridgeModel
+from infrastructure.core.models.event_bridge import (
+    EventBridge,
+    S3EventBridgeModel,
+    CrawlerEventBridgeModel,
+)
+
+
+class rAPIdTrigger(BaseModel):
+    domain: str
+    name: str
+
+    def create_rapid_crawler_name(self, rapid_prefix: str) -> str:
+        return f"{rapid_prefix}_crawler/{self.domain}/{self.name}"
+
+    def event_pattern(self, rapid_prefix: str):
+        crawler_name = self.create_rapid_crawler_name(rapid_prefix)
+        event_bridge_model = EventBridge(
+            model=CrawlerEventBridgeModel(crawler_name=crawler_name)
+        )
+
+        return json.dumps(event_bridge_model.return_event_bridge_pattern())
+
+    def schedule_expression(self):
+        return None
 
 
 class S3Trigger(BaseModel):
