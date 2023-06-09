@@ -1,11 +1,8 @@
 import boto3
 import json
-from moto import mock_stepfunctions
 from mock import MagicMock
 import pytest
-import pulumi
 
-from pulumi_aws.lambda_ import Function as AwsFunction
 from infrastructure.core.state_machine import CreatePipelineStateMachine
 from infrastructure.core.creator import CreatePipeline
 from infrastructure.core.models.definition import (
@@ -16,13 +13,15 @@ from infrastructure.core.models.definition import (
 )
 from utils.exceptions import PipelineDoesNotExistException
 
-from tests.utils import config, pipeline_definition
-
 
 class TestCreateStateMachine:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
     @pytest.fixture
-    def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
+    def pipeline_infrastructure_block(
+        self, mock_pulumi, mock_pulumi_config, config, pipeline_definition
+    ):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         return pipeline_infrastructure_block
 
@@ -53,20 +52,11 @@ class TestCreateStateMachine:
         )
         return state_machine_resource_block
 
-    @pytest.mark.usefixtures("state_machine_resource_block")
+    @pytest.mark.usefixtures("state_machine_resource_block", "config")
     def test_instantiate_create_state_machine_resource(
-        self, state_machine_resource_block
+        self, state_machine_resource_block, config
     ):
         assert state_machine_resource_block.project == config.project
-
-    @pytest.mark.usefixtures("state_machine_resource_block")
-    def test_create_function_name(
-        self, state_machine_resource_block: CreatePipelineStateMachine
-    ):
-        assert (
-            state_machine_resource_block.create_function_name("function")
-            == "test_pipeline_function"
-        )
 
     @pytest.mark.usefixtures("state_machine_resource_block")
     def test_create_lambda_next_trigger_state(
@@ -80,7 +70,7 @@ class TestCreateStateMachine:
         assert state_map == {
             "Type": "Task",
             "Resource": "some:test:arn",
-            "Next": "test_pipeline_test_next_function",
+            "Next": "test-next-function",
         }
 
     @pytest.mark.usefixtures("state_machine_resource_block")
@@ -98,216 +88,108 @@ class TestCreateStateMachine:
     def test_create_state_machine_definition(
         self, state_machine_resource_block: CreatePipelineStateMachine
     ):
-        state_machine_resource_block.lambdas_dict = {
-            "test_pipeline_test_lambda_1": "",
-            "test_pipeline_test_lambda_2": "",
-            "test_pipeline_test_lambda_3": "",
+        name_to_arn_map = {
+            "lambda-1": "test-lambda-1-arn",
+            "lambda-2": "test-lambda-2-arn",
+            "lambda-3": "test-lambda-3-arn",
         }
+
         state_machine_resource_block.pipeline_definition = PipelineDefinition(
             file_path=__file__,
             description="Test pipeline",
             functions=[
                 Function(
-                    name="test-lambda-1",
-                    next_function=NextFunction(name="test-lambda-2"),
+                    name="lambda-1",
+                    next_function=NextFunction(name="lambda-2"),
                 ),
                 Function(
-                    name="test-lambda-2",
-                    next_function=NextFunction(name="test-lambda-3"),
+                    name="lambda-2",
+                    next_function=NextFunction(name="lambda-3"),
                 ),
                 Function(
-                    name="test-lambda-3",
+                    name="lambda-3",
                 ),
             ],
         )
-        arns = [["test:lambda-1:arn", "test:lambda-2:arn", "test:lambda-3:arn"]]
-        definition = state_machine_resource_block.create_state_machine_definition(arns)
-        assert json.loads(definition) == {
+        expected = {
             "Comment": "Test pipeline",
-            "StartAt": "test_pipeline_test_lambda_1",
+            "StartAt": "lambda-1",
             "States": {
-                "test_pipeline_test_lambda_1": {
+                "lambda-1": {
                     "Type": "Task",
-                    "Resource": "test:lambda-1:arn",
-                    "Next": "test_pipeline_test_lambda_2",
+                    "Resource": "test-lambda-1-arn",
+                    "Next": "lambda-2",
                 },
-                "test_pipeline_test_lambda_2": {
+                "lambda-2": {
                     "Type": "Task",
-                    "Resource": "test:lambda-2:arn",
-                    "Next": "test_pipeline_test_lambda_3",
+                    "Resource": "test-lambda-2-arn",
+                    "Next": "lambda-3",
                 },
-                "test_pipeline_test_lambda_3": {
+                "lambda-3": {
                     "Type": "Task",
-                    "Resource": "test:lambda-3:arn",
+                    "Resource": "test-lambda-3-arn",
                     "End": True,
                 },
             },
         }
+
+        res = state_machine_resource_block.create_state_machine_definition(
+            name_to_arn_map
+        )
+        assert json.loads(res) == expected
 
     @pytest.mark.usefixtures("state_machine_resource_block")
     def test_create_state_machine_definition_next_function_as_pipeline(
         self, state_machine_resource_block
     ):
-        state_machine_resource_block.lambdas_dict = {
-            "test_pipeline_test_lambda_1": "",
-            "test_pipeline_test_lambda_2": "",
-            "test_pipeline_test_pipeline": "",
-        }
+        state_machine_resource_block.fetch_step_function_arn_from_name = MagicMock(
+            return_value="next-function-arn"
+        )
 
+        name_to_arn_map = {
+            "lambda-1": "lambda-1-arn",
+            "lambda-2": "lambda-2-arn",
+        }
         state_machine_resource_block.pipeline_definition = PipelineDefinition(
             file_path=__file__,
             description="Test pipeline",
             functions=[
                 Function(
-                    name="test-lambda-1",
-                    next_function=NextFunction(name="test-lambda-2"),
+                    name="lambda-1",
+                    next_function=NextFunction(name="lambda-2"),
                 ),
                 Function(
-                    name="test-lambda-2",
+                    name="lambda-2",
                     next_function=NextFunction(
                         name="test-pipeline", type=NextFunctionTypes.PIPELINE
                     ),
                 ),
             ],
         )
-        arns = [["test:lambda-1:arn", "test:lambda-2:arn", "test:pipeline:arn"]]
-        definition = state_machine_resource_block.create_state_machine_definition(arns)
-        assert json.loads(definition) == {
+
+        expected = {
             "Comment": "Test pipeline",
-            "StartAt": "test_pipeline_test_lambda_1",
+            "StartAt": "lambda-1",
             "States": {
-                "test_pipeline_test_lambda_1": {
+                "lambda-1": {
                     "Type": "Task",
-                    "Resource": "test:lambda-1:arn",
-                    "Next": "test_pipeline_test_lambda_2",
+                    "Resource": "lambda-1-arn",
+                    "Next": "lambda-2",
                 },
-                "test_pipeline_test_lambda_2": {
+                "lambda-2": {
                     "Type": "Task",
                     "Resource": "arn:aws:states:::states:startExecution.sync:2",
-                    "Parameters": {"StateMachineArn": "test_pipeline_arn"},
+                    "Parameters": {"StateMachineArn": "next-function-arn"},
                     "End": True,
                 },
             },
         }
 
-    @pytest.mark.usefixtures("state_machine_resource_block")
-    @pulumi.runtime.test
-    def test_create_state_machine(
-        self, state_machine_resource_block: CreatePipelineStateMachine
-    ):
-        def check_state_function(args):
-            definition = args[0]
-            assert json.loads(definition) == {
-                "Comment": "Test pipeline",
-                "StartAt": "test_pipeline_test_lambda_1",
-                "States": {
-                    "test_pipeline_test_lambda_1": {
-                        "Type": "Task",
-                        "Resource": None,
-                        "Next": "test_pipeline_test_lambda_2",
-                    },
-                    "test_pipeline_test_lambda_2": {
-                        "Type": "Task",
-                        "Resource": None,
-                        "Next": "test_pipeline_test_lambda_3",
-                    },
-                    "test_pipeline_test_lambda_3": {
-                        "Type": "Task",
-                        "Resource": None,
-                        "End": True,
-                    },
-                },
-            }
-
-        state_machine_resource_block.lambdas_dict = {
-            "test_pipeline_test_lambda_1": AwsFunction(
-                resource_name="test:lambda:1", name="test-lambda-1", role="role"
-            ),
-            "test_pipeline_test_lambda_2": AwsFunction(
-                resource_name="test:lambda:1", name="test-lambda-2", role="role"
-            ),
-            "test_pipeline_test_lambda_3": AwsFunction(
-                resource_name="test:lambda:1", name="test-lambda-3", role="role"
-            ),
-        }
-
-        state_machine_resource_block.pipeline_definition = PipelineDefinition(
-            file_path=__file__,
-            description="Test pipeline",
-            functions=[
-                Function(
-                    name="test-lambda-1",
-                    next_function=NextFunction(name="test-lambda-2"),
-                ),
-                Function(
-                    name="test-lambda-2",
-                    next_function=NextFunction(name="test-lambda-3"),
-                ),
-                Function(
-                    name="test-lambda-3",
-                ),
-            ],
+        res = state_machine_resource_block.create_state_machine_definition(
+            name_to_arn_map
         )
+        assert json.loads(res) == expected
 
-        return pulumi.Output.all(
-            state_machine_resource_block.outputs.state_machine.definition
-        ).apply(check_state_function)
-
-    @pytest.mark.usefixtures("state_machine_resource_block")
-    @pulumi.runtime.test
-    def test_create_state_machine_next_function_as_pipeline(
-        self, state_machine_resource_block
-    ):
-        def check_state_function(args):
-            definition = args[0]
-            assert json.loads(definition) == {
-                "Comment": "Test pipeline",
-                "StartAt": "test_pipeline_test_lambda_1",
-                "States": {
-                    "test_pipeline_test_lambda_1": {
-                        "Type": "Task",
-                        "Resource": None,
-                        "Next": "test_pipeline_test_lambda_2",
-                    },
-                    "test_pipeline_test_lambda_2": {
-                        "Type": "Task",
-                        "Resource": "arn:aws:states:::states:startExecution.sync:2",
-                        "Parameters": {"StateMachineArn": "test_pipeline_arn"},
-                        "End": True,
-                    },
-                },
-            }
-
-        state_machine_resource_block.lambdas_dict = {
-            "test_pipeline_test_lambda_1": AwsFunction(
-                resource_name="test:lambda:1", name="test-lambda-1", role="role"
-            ),
-            "test_pipeline_test_lambda_2": AwsFunction(
-                resource_name="test:lambda:1", name="test-lambda-2", role="role"
-            ),
-        }
-        state_machine_resource_block.pipeline_definition = PipelineDefinition(
-            file_path=__file__,
-            description="Test pipeline",
-            functions=[
-                Function(
-                    name="test-lambda-1",
-                    next_function=NextFunction(name="test-lambda-2"),
-                ),
-                Function(
-                    name="test-lambda-2",
-                    next_function=NextFunction(
-                        name="test-pipeline", type=NextFunctionTypes.PIPELINE
-                    ),
-                ),
-            ],
-        )
-
-        return pulumi.Output.all(
-            state_machine_resource_block.outputs.state_machine.definition
-        ).apply(check_state_function)
-
-    @pytest.mark.usefixtures("state_machine_resource_block")
     def test_fetch_step_function_arn_from_name(self, state_machine_resource_block):
         with pytest.raises(PipelineDoesNotExistException):
             state_machine_resource_block.fetch_step_function_arn_from_name(

@@ -9,13 +9,15 @@ from infrastructure.core.event_bridge import (
 from infrastructure.core.models.definition import S3Trigger
 from infrastructure.core.creator import CreatePipeline
 
-from tests.utils import config, pipeline_definition
-
 
 class TestCreateEventBridgeRule:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
     @pytest.fixture
-    def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
+    def pipeline_infrastructure_block(
+        self, mock_pulumi, mock_pulumi_config, config, pipeline_definition
+    ):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         return pipeline_infrastructure_block
 
@@ -32,9 +34,9 @@ class TestCreateEventBridgeRule:
         )
         return event_bridge_rule_resource_block
 
-    @pytest.mark.usefixtures("event_bridge_rule_resource_block")
+    @pytest.mark.usefixtures("event_bridge_rule_resource_block", "config")
     def test_instantiate_create_event_bridge_rule_resource(
-        self, event_bridge_rule_resource_block
+        self, event_bridge_rule_resource_block, config
     ):
         assert event_bridge_rule_resource_block.project == config.project
 
@@ -95,9 +97,13 @@ class TestCreateEventBridgeRule:
 
 
 class TestCreateEventBridgeTarget:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
     @pytest.fixture
-    def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
+    def pipeline_infrastructure_block(
+        self, mock_pulumi, mock_pulumi_config, config, pipeline_definition
+    ):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         return pipeline_infrastructure_block
 
@@ -118,9 +124,9 @@ class TestCreateEventBridgeTarget:
         )
         return event_bridge_target_resource_block
 
-    @pytest.mark.usefixtures("event_bridge_target_resource_block")
+    @pytest.mark.usefixtures("event_bridge_target_resource_block", "config")
     def test_instantiate_create_event_bridge_target_resource(
-        self, event_bridge_target_resource_block
+        self, event_bridge_target_resource_block, config
     ):
         assert event_bridge_target_resource_block.project == config.project
 

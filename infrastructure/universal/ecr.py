@@ -49,12 +49,12 @@ class CreateEcrResource(CreateResourceBlock):
 
     @staticmethod
     def create_repository_arn_export_key(repo_name: str) -> str:
-        return f"ecr_repository_{repo_name}_arn"
+        return f"ecr-repository-{repo_name}-arn"
 
     @staticmethod
     def create_repository_id_export_key(repo_name: str) -> str:
-        return f"ecr_repository_{repo_name}_id"
+        return f"ecr-repository-{repo_name}-id"
 
     @staticmethod
     def create_repository_url_export_key(repo_name: str) -> str:
-        return f"ecr_repository_{repo_name}_url"
+        return f"ecr-repository-{repo_name}-url"

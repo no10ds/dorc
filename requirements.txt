@@ -1,16 +1,18 @@
+-e .
+-e ${CONFIG_REPO_PATH}
+boto3==1.26.145
+checksumdir==1.2.0
+gitpython==3.1.31
+mkdocs==1.4.3
+mkdocs-material==9.1.14
+mock==5.0.2
 pulumi==3.68.0
 pulumi_aws==5.41.0
 pulumi_docker==4.2.3
 pulumi-terraform==5.12.2
-python-dotenv==1.0.8
 pydantic==1.10.8
 pylint==2.17.4
-gitpython==3.1.31
-checksumdir==1.2.0
-typeguard==4.0.0
 pytest==7.3.1
 pytest-cov==4.1.0
-mock==5.0.2
-mkdocs==1.4.3
-mkdocs-material==9.1.14
--e .
+python-dotenv==1.0.0
+typeguard==4.0.0

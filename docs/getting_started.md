@@ -41,21 +41,30 @@ The only deployment in *dorc* that is environment agnostic is the universal infr
 
 ### Layers
 
-We recommend building your *dorc* project with the concept of data pipeline layers in mind. A typical first layer is to take data from a raw source and clean into a standardised form. A typical second layer might be taking this cleaned data and performing aggregations or filters to produce a processed layer. We could then join together multiple processed datasets into richer curated sources.
+Layers facilitate enable the organization of data pipelines at different levels of abstraction, promoting a structured and manageable approach to data management.
+
+> Note: You do not have to use layers, you can just have one folder called `default` that contains all of your pipelines.
+
+A typical data architecture might contain the following layers:
+
+- raw-to-processed: This layer consists of pipelines responsible for transforming datasets from their raw form, performing tasks such as validation, cleaning, and wrangling, and then moving them to the processed layer. The resulting data could then be used by Data Scientists for analysis or developmet.
+
+- processed-to-curated: This layer consists of pipelines that further refine the processed data into curated data products. Activities in this layer may involve joining multiple datasets and incorporating business logic. The resulting data could then be surfaced in visualisations.
+
 
 For a *dorc* project we would reference this structure within the `src` folder like the following, note that example is typically the high level name of the specific pipeline you are willing to create.
 
 ```
 /pipeline-config
     /src
-        /example
-            /raw
-            /processed
-            /curated
+        /raw-to-processed
+            /example
+        /processed-to-curated
+            /example
         Dockerfile
 ```
 
-See further [reading](https://medium.com/codex/data-pipeline-architecture-variety-of-ways-you-can-build-your-data-pipeline-66b3dd456df1) if unsure on a typical data engineering structure.
+See further [reading](https://medium.com/codex/data-pipeline-architecture-variety-of-ways-you-can-build-your-data-pipeline-66b3dd456df1) if unsure about typical data engineering structures.
 
 ## Environment Variables
 
