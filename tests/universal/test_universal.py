@@ -5,43 +5,46 @@ from mock import patch, MagicMock, call
 from infrastructure.universal import CreateUniversal
 from utils.exceptions import CannotFindEnvironmentVariableException
 
-from tests.utils import universal_config
-
 
 class TestCreateUniversal:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
-    def test_create_universal(self, mock_pulumi, mock_pulumi_config):
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "universal_config")
+    def test_create_universal(self, mock_pulumi, mock_pulumi_config, universal_config):
         universal_block = CreateUniversal(universal_config)
         assert universal_block.config == universal_config
 
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
-    def test_cannot_create_universal_without_config_repo_env(
-        self, mock_pulumi, mock_pulumi_config
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "universal_config")
+    def test_retrieve_repo_list_from_folders(
+        self, mock_pulumi, mock_pulumi_config, universal_config
     ):
-        del os.environ["CONFIG_REPO_PATH"]
-        with pytest.raises(CannotFindEnvironmentVariableException):
-            CreateUniversal(universal_config)
-
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
-    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "./tests/mock_config_repo_src"})
-    def test_retrieve_repo_list_from_folders(self, mock_pulumi, mock_pulumi_config):
         universal_config.source_code_folder = "src"
         universal_block = CreateUniversal(universal_config)
-        assert universal_block.repo_list == ["test-layer"]
+        assert universal_block.repo_list == ["layer-test-lambda1", "layer-test-lambda2"]
 
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
-    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "./tests/mock_config_repo"})
-    def test_retrieve_repo_list_from_folders_different_source_code_folder(
-        self, mock_pulumi, mock_pulumi_config
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "universal_config")
+    @patch("infrastructure.universal.creator.glob")
+    def test_retrieve_repo_list_from_folders_with_custom_source_path(
+        self, mock_glob, mock_pulumi, mock_pulumi_config, universal_config
     ):
-        universal_config.source_code_folder = ""
+        universal_config.source_code_folder = "app"
+        mock_glob.return_value = [
+            "layer/test/lambda1/lambda.py",
+            "layer/test/lambda2/lambda.py",
+        ]
         universal_block = CreateUniversal(universal_config)
-        assert universal_block.repo_list == ["test-layer2"]
 
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+        assert universal_block.repo_list == ["layer-test-lambda1", "layer-test-lambda2"]
+        mock_glob.assert_called_once_with(
+            "./tests/mock_config_repo_src/app/*/*/*/lambda.py"
+        )
+
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "universal_config")
     @patch("infrastructure.universal.creator.CreateEcrResource")
     def test_create_universal_apply(
-        self, mock_ecr_resource: MagicMock, mock_pulumi, mock_pulumi_config
+        self,
+        mock_ecr_resource: MagicMock,
+        mock_pulumi,
+        mock_pulumi_config,
+        universal_config,
     ):
         universal_block = CreateUniversal(universal_config)
         repo_list = ["repo1", "repo2"]

@@ -5,13 +5,11 @@ from mock import patch, call, ANY
 from infrastructure.infra.creator import CreateInfra
 from infrastructure.infra.iam import CreateIamResource
 
-from tests.utils import config
-
 
 class TestCreateIamResource:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config", "config")
     @pytest.fixture
-    def infra_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
+    def infra_infrastructure_block(self, mock_pulumi, mock_pulumi_config, config):
         infra_infrastructure_block = CreateInfra(config)
         return infra_infrastructure_block
 
@@ -27,13 +25,15 @@ class TestCreateIamResource:
         )
         return iam_resource_block
 
-    @pytest.mark.usefixtures("iam_resource_block")
-    def test_instantiate_create_iam_resource(self, iam_resource_block):
+    @pytest.mark.usefixtures("iam_resource_block", "config")
+    def test_instantiate_create_iam_resource(self, iam_resource_block, config):
         assert iam_resource_block.project == config.project
 
-    @pytest.mark.usefixtures("iam_resource_block")
+    @pytest.mark.usefixtures("iam_resource_block", "config")
     @pulumi.runtime.test
-    def test_iam_lambda_role_created(self, iam_resource_block: CreateIamResource):
+    def test_iam_lambda_role_created(
+        self, iam_resource_block: CreateIamResource, config
+    ):
         def check_lambda_role(args):
             name, tags = args
             assert name == "test-pipelines-test-lambda-role"
@@ -44,10 +44,10 @@ class TestCreateIamResource:
             check_lambda_role
         )
 
-    @pytest.mark.usefixtures("iam_resource_block")
+    @pytest.mark.usefixtures("iam_resource_block", "config")
     @pulumi.runtime.test
     def test_iam_state_function_role_created(
-        self, iam_resource_block: CreateIamResource
+        self, iam_resource_block: CreateIamResource, config
     ):
         def check_state_function_role(args):
             name, tags = args
@@ -59,10 +59,10 @@ class TestCreateIamResource:
             state_function_role.name, state_function_role.tags
         ).apply(check_state_function_role)
 
-    @pytest.mark.usefixtures("iam_resource_block")
+    @pytest.mark.usefixtures("iam_resource_block", "config")
     @pulumi.runtime.test
     def test_iam_cloudevent_state_function_role_created(
-        self, iam_resource_block: CreateIamResource
+        self, iam_resource_block: CreateIamResource, config
     ):
         def check_cloudevent_function_role(args):
             name, tags = args

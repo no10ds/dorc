@@ -1,10 +1,6 @@
 import pytest
-import os
-import pulumi
 
-from pydantic import BaseModel  # pylint: disable=no-name-in-module
-from pulumi import Output
-from mock import MagicMock, patch
+from mock import MagicMock
 from infrastructure.core.creator import CreatePipeline
 from utils.constants import (
     LAMBDA_ROLE_ARN,
@@ -12,19 +8,20 @@ from utils.constants import (
     CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
 )
 
-from tests.utils import config, pipeline_definition, MockedEcrAuthentication
-
 
 class TestCreatePipeline:
-    @pytest.mark.usefixtures("mock_pulumi", "mock_pulumi_config")
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
     @pytest.fixture
-    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "10ds-core-pipelines"})
-    def pipeline_infrastructure_block(self, mock_pulumi, mock_pulumi_config):
+    def pipeline_infrastructure_block(
+        self, mock_pulumi, mock_pulumi_config, config, pipeline_definition
+    ):
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         return pipeline_infrastructure_block
 
-    @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    def test_instantiate_pipeline_creator(self, pipeline_infrastructure_block):
+    @pytest.mark.usefixtures("pipeline_infrastructure_block", "config")
+    def test_instantiate_pipeline_creator(self, pipeline_infrastructure_block, config):
         assert pipeline_infrastructure_block.config.project == config.project
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
@@ -89,14 +86,13 @@ class TestCreatePipeline:
         self, pipeline_infrastructure_block: CreatePipeline
     ):
         pipeline_infrastructure_block.pipeline_definition.file_path = (
-            "./tests/mock_config_repo_src/src/test/layer/__main__.py"
+            "./tests/mock_config_repo_src/test/layer/__main__.py"
         )
-
         assert (
             pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
                 "10ds-core-pipelines/tests/", 1
             )[-1]
-            == "mock_config_repo_src/src/test/layer/src"
+            == "mock_config_repo_src/test/layer/src"
         )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
@@ -116,77 +112,6 @@ class TestCreatePipeline:
         )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    @patch("infrastructure.core.creator.os.walk")
-    @patch.object(CreatePipeline, "extract_lambda_name_from_top_dir")
-    @patch.object(CreatePipeline, "apply_docker_image_build_and_push")
-    @patch.object(CreatePipeline, "apply_lambda_function")
-    def test_pipeline_creator_build_and_deploy_folder_structure_functions(
-        self,
-        mock_apply_lambda: MagicMock,
-        mock_apply_docker: MagicMock,
-        mock_extract_name: MagicMock,
-        mock_os_walk: MagicMock,
-        pipeline_infrastructure_block: CreatePipeline,
-    ):
-        mock_os_walk.return_value = [
-            ("/src_dir", ["dir1"], []),
-            ("/src_dir/dir1", [], []),
-        ]
-        mock_extract_name.side_effect = ["lambda1"]
-        mock_apply_docker.return_value = "docker_image"
-        mock_apply_lambda.return_value.outputs = MagicMock(
-            lambda_function="lambda_function"
-        )
-        pipeline_infrastructure_block.build_and_deploy_folder_structure_functions("url")
-
-        mock_os_walk.assert_called_once_with(pipeline_infrastructure_block.src_dir)
-        mock_extract_name.assert_called_once_with("/src_dir/dir1")
-        mock_apply_docker.assert_called_once_with("url", "lambda1", "/src_dir/dir1")
-        mock_apply_lambda.assert_called_once_with("lambda1", "docker_image")
-        assert (
-            pipeline_infrastructure_block.created_lambdas["lambda1"]
-            == "lambda_function"
-        )
-
-    @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    @patch("infrastructure.core.creator.dirhash")
-    @patch.object(CreatePipeline, "extract_lambda_source_dir_from_top_dir")
-    @patch.dict(os.environ, {"CONFIG_REPO_PATH": "10ds-core-pipelines"})
-    @pulumi.runtime.test
-    def test_pipeline_creator_apply_docker_image_build_and_push(
-        self,
-        mock_extract_name: MagicMock,
-        mock_dirhash: MagicMock,
-        pipeline_infrastructure_block: CreatePipeline,
-    ):
-        def check_built_docker_image(args):
-            build, image_name, registry = args
-            assert image_name == "test_url:test_lambda_0123abcd"
-            assert build == {
-                "cacheFrom": {"images": ["test_url:test_lambda_0123abcd"]},
-                "args": {"CODE_PATH": "lambda1", "BUILDKIT_INLINE_CACHE": "1"},
-                "builderVersion": "BuilderBuildKit",
-                "platform": "linux/amd64",
-                "context": "10ds-core-pipelines",
-                "dockerfile": "10ds-core-pipelines/src/Dockerfile",
-            }
-            assert registry == {
-                "password": "mock_password",
-                "server": "test_url",
-                "username": "mock_username",
-            }
-
-        mock_extract_name.return_value = "lambda1"
-        mock_dirhash.return_value = "0123abcd"
-        pipeline_infrastructure_block.registry_info = MockedEcrAuthentication(
-            password="mock_password", user_name="mock_username"
-        )
-
-        image = pipeline_infrastructure_block.apply_docker_image_build_and_push(
-            "test_url",
-            "test_lambda",
-            "",
-        )
-        return pulumi.Output.all(image.build, image.image_name, image.registry).apply(
-            check_built_docker_image
-        )
+    def test_fetch_lambda_paths(self, pipeline_infrastructure_block):
+        res = pipeline_infrastructure_block.fetch_lambda_paths()
+        assert res == ["layer/test/lambda1/lambda.py", "layer/test/lambda2/lambda.py"]
