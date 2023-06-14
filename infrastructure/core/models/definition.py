@@ -13,6 +13,7 @@ from infrastructure.core.models.event_bridge import (
 class rAPIdTrigger(BaseModel):
     domain: str
     name: str
+    client_key: Optional[str]
 
     def create_rapid_crawler_name(self, rapid_prefix: str) -> str:
         return f"{rapid_prefix}_crawler/{self.domain}/{self.name}"
@@ -77,7 +78,7 @@ class PipelineDefinition(BaseModel):
     file_path: str
     description: Optional[str] = ""
     functions: list[Function]
-    trigger: Optional[S3Trigger | CronTrigger] = None
+    trigger: Optional[S3Trigger | CronTrigger | rAPIdTrigger] = None
 
     @validator("functions")
     def check_for_only_one_termination(

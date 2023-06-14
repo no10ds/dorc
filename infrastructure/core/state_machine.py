@@ -6,7 +6,6 @@ import pulumi_aws as aws
 
 from pulumi import ResourceOptions
 from pulumi_aws import Provider
-from pulumi_aws.lambda_ import Function
 from pulumi_aws.sfn import StateMachine
 
 from infrastructure.core.models.definition import (

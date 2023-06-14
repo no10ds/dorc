@@ -7,6 +7,7 @@ from pulumi_aws.cloudwatch import EventRule, EventTarget
 from infrastructure.core.models.definition import (
     CronTrigger,
     S3Trigger,
+    rAPIdTrigger,
     PipelineDefinition,
 )
 from utils.abstracts import CreateResourceBlock
@@ -22,7 +23,7 @@ class CreateEventBridgeRule(CreateResourceBlock):
         config: Config,
         aws_provider: Provider,
         environment: str,
-        trigger: S3Trigger | CronTrigger,
+        trigger: S3Trigger | CronTrigger | rAPIdTrigger,
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.trigger = trigger
@@ -33,7 +34,7 @@ class CreateEventBridgeRule(CreateResourceBlock):
         cloudwatch_event_rule = aws.cloudwatch.EventRule(
             resource_name=name,
             name=name,
-            event_pattern=self.trigger.event_pattern(),
+            event_pattern=self.trigger.event_pattern(""),
             schedule_expression=self.trigger.schedule_expression(),
             opts=ResourceOptions(provider=self.aws_provider),
         )

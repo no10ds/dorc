@@ -4,9 +4,16 @@ from typing import Optional
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi import Output
 
+from infrastructure.core.models.definition import rAPIdTrigger
 from utils.exceptions import (
     CannotFindEnvironmentVariableException,
+    InvalidConfigDefinitionException,
 )
+
+
+class rAPIdConfig(BaseModel):
+    prefix: str
+    user_pool_id: str
 
 
 class UniversalConfig(BaseModel):
@@ -39,6 +46,8 @@ class Config(BaseModel):
     universal: UniversalConfig
     vpc_id: Output[str] | str
     private_subnet_ids: Output[list[str]] | list[str]
+
+    rAPId_config: Optional[rAPIdConfig]
 
     additional_lambda_role_policy_arn: Optional[Output[str] | str]
     additional_state_function_role_policy_arn: Optional[Output[str] | str]
