@@ -28,13 +28,16 @@ class CreateEventBridgeRule(CreateResourceBlock):
         super().__init__(config, aws_provider, environment)
         self.trigger = trigger
         self.project = self.config.project
+        self.is_rapid_trigger = isinstance(trigger, rAPIdTrigger)
 
     def apply(self) -> Output:
         name = f"{self.project}-{self.environment}-{self.trigger.name}"
         cloudwatch_event_rule = aws.cloudwatch.EventRule(
             resource_name=name,
             name=name,
-            event_pattern=self.trigger.event_pattern(""),
+            event_pattern=self.trigger.event_pattern(self.config.rAPId_config.prefix)
+            if self.is_rapid_trigger
+            else self.trigger.event_pattern(),
             schedule_expression=self.trigger.schedule_expression(),
             opts=ResourceOptions(provider=self.aws_provider),
         )
