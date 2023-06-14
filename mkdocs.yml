@@ -1,0 +1,19 @@
+site_name: dorc
+
+theme:
+  name: 'material'
+
+nav:
+  - Welcome to dorc: index.md
+  - Getting started: getting_started.md
+  - Pipelines: pipelines.md
+  - Pipeline Definition: pipeline_definition.md
+  - Configuration: config.md
+  - Templates: templates.md
+  - Changelog: changelog.md
+
+markdown_extensions:
+  - pymdownx.highlight
+  - pymdownx.extra
+  - pymdownx.tabbed:
+      alternate_style: true
