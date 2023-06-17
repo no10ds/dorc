@@ -1,7 +1,10 @@
 import pytest
 
-from mock import MagicMock
+from mock import MagicMock, patch
 from infrastructure.core.creator import CreatePipeline
+from infrastructure.core.models.definition import PipelineDefinition, rAPIdTrigger
+from utils.config import Config, rAPIdConfig
+from utils.exceptions import InvalidConfigDefinitionException
 from utils.constants import (
     LAMBDA_ROLE_ARN,
     STATE_FUNCTION_ROLE_ARN,
@@ -115,3 +118,58 @@ class TestCreatePipeline:
     def test_fetch_lambda_paths(self, pipeline_infrastructure_block):
         res = pipeline_infrastructure_block.fetch_lambda_paths()
         assert res == ["layer/test/lambda1/lambda.py", "layer/test/lambda2/lambda.py"]
+
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
+    def test_validate_rapid_trigger_fails_with_no_rapid_config(
+        self,
+        mock_pulumi,
+        mock_pulumi_config,
+        config: Config,
+        pipeline_definition: PipelineDefinition,
+    ):
+        config.rAPId_config = None
+        pipeline_definition.trigger = rAPIdTrigger(domain="domain", name="name")
+        with pytest.raises(InvalidConfigDefinitionException):
+            CreatePipeline(config, pipeline_definition)
+
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
+    @patch("infrastructure.core.creator.CreateRapidClient")
+    def test_create_rapid_client_with_client_key(
+        self,
+        mock_rapid_client: MagicMock,
+        mock_pulumi,
+        mock_pulumi_config,
+        config: Config,
+        pipeline_definition: PipelineDefinition,
+    ):
+        pipeline_definition.trigger = rAPIdTrigger(
+            domain="domain", name="name", client_key="client_key"
+        )
+        config.rAPId_config = rAPIdConfig(prefix="prefix", user_pool_id="xxx-yyy-zzz")
+        mock_rapid_client.return_value.fetch_secret.return_value.user_pool_client = (
+            "mock_return"
+        )
+        pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
+        assert pipeline_infrastructure_block.create_rapid_client() == "mock_return"
+
+    @pytest.mark.usefixtures(
+        "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
+    )
+    @patch("infrastructure.core.creator.CreateRapidClient")
+    def test_create_rapid_client_without_client_key(
+        self,
+        mock_rapid_client: MagicMock,
+        mock_pulumi,
+        mock_pulumi_config,
+        config: Config,
+        pipeline_definition: PipelineDefinition,
+    ):
+        pipeline_definition.trigger = rAPIdTrigger(domain="domain", name="name")
+        config.rAPId_config = rAPIdConfig(prefix="prefix", user_pool_id="xxx-yyy-zzz")
+        mock_rapid_client.return_value.outputs.user_pool_client = "mock_return"
+        pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
+        assert pipeline_infrastructure_block.create_rapid_client() == "mock_return"
