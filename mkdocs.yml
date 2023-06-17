@@ -9,6 +9,7 @@ nav:
   - Pipelines: pipelines.md
   - Pipeline Definition: pipeline_definition.md
   - Configuration: config.md
+  - Templates: templates.md
   - Changelog: changelog.md
 
 markdown_extensions:
