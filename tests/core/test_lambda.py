@@ -32,6 +32,7 @@ class TestCreateLambda:
             "test:lambda:role",
             "test-function",
             "test/function",
+            None,
         )
         return lambda_resource_block
 

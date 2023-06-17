@@ -37,6 +37,7 @@ def mock_pulumi_config():
 @pytest.fixture
 def universal_config(monkeypatch) -> UniversalConfig:
     monkeypatch.setenv("CONFIG_REPO_PATH", "./tests/mock_config_repo_src")
+    monkeypatch.setenv("UNIVERSAL_STACK_NAME", "universal")
     return UniversalConfig(
         region="eu-west-2",
         project="test-pipelines",

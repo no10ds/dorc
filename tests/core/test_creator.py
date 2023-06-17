@@ -90,7 +90,7 @@ class TestCreatePipeline:
         )
         assert (
             pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
-                "10ds-core-pipelines/tests/", 1
+                "dorc/tests/", 1
             )[-1]
             == "mock_config_repo_src/test/layer/src"
         )
@@ -106,7 +106,7 @@ class TestCreatePipeline:
 
         assert (
             pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
-                "10ds-core-pipelines/tests/", 1
+                "dorc/tests/", 1
             )[-1]
             == "mock_config_repo_src/src/test/layer"
         )
