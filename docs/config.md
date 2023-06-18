@@ -32,6 +32,8 @@ Config(
     vpc_id: pulumi.Output[str] | str
     private_subnet_ids: pulumi.Output[list[str]] | list[str]
 
+    rAPId_config: Optional[rAPIdConfig]
+
     additional_lambda_role_policy_arn: Optional[pulumi.Output[str] | str]
     additional_state_function_role_policy_arn: Optional[pulumi.Output[str] | str]
     additional_cloudevent_state_machine_trigger_role_policy_arn: Optional[pulumi.Output[str] | str]
@@ -41,8 +43,25 @@ Config(
 * `universal` - Your defined *dorc* universal configuration model.
 * `vpc_id` - The ID of your AWS VPC where the infrastructure will be deployed.
 * `private_subnet_ids` - A list of AWS private subnet IDs to attach to the resources.
+* `rAPId_config` - If integrating with rAPId specify your rAPId instance configuration here.
 * `additional_lambda_role_policy_arn` - By default, *dorc* creates a lambda policy that is sufficient to start with. However, if you require specific access to different services within your lambdas, you can create your own policy and pass the AWS ARN to *dorc*, which will attach it to its default policy.
 * `additional_state_function_role_policy_arn` - Similar to the lambda policy, but attached to the default state machines policy.
 * `additional_cloudevent_state_machine_trigger_role_policy_arn` - Similar to the lambda policy, but attached to the default CloudEvent trigger policy.
 
 Please note that the types `pulumi.Output[str]`, `pulumi.Output[list[str]]` are part of the Pulumi framework, which is utilized by dorc for infrastructure deployment.
+
+## rAPId Configuration
+
+If using *dorc* with rAPId you specify your rAPId details here so *dorc* can handle the client access. Here is an example of the `rAPIdConfig` model:
+
+```python
+from utils.config import rAPIdConfig
+
+rAPIdConfig(
+    prefix: str
+    user_pool_id: str
+)
+```
+
+* `prefix` - Your rAPId instance infrastructure prefix value.
+* `user_pool_id` - Your rAPId Cognito user pool id.
