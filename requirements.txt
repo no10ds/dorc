@@ -2,7 +2,7 @@
 -e ${CONFIG_REPO_PATH}
 boto3==1.26.145
 checksumdir==1.2.0
-gitpython==3.1.31
+gitpython==3.1.32
 mock==5.0.2
 pulumi==3.68.0
 pulumi_aws==5.41.0
