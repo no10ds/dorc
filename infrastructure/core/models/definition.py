@@ -1,6 +1,8 @@
 import json
+
 from enum import StrEnum
 from typing import Optional
+
 from pydantic import BaseModel, validator  # pylint: disable=no-name-in-module
 
 from infrastructure.core.models.event_bridge import (

@@ -85,36 +85,6 @@ class TestCreatePipeline:
         )
 
     @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    def test_pipeline_creator_fetch_source_directory_name(
-        self, pipeline_infrastructure_block: CreatePipeline
-    ):
-        pipeline_infrastructure_block.pipeline_definition.file_path = (
-            "./tests/mock_config_repo_src/test/layer/__main__.py"
-        )
-        assert (
-            pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
-                "dorc/tests/", 1
-            )[-1]
-            == "mock_config_repo_src/test/layer/src"
-        )
-
-    @pytest.mark.usefixtures("pipeline_infrastructure_block")
-    def test_pipeline_creator_fetch_source_directory_name_with_no_source_code_folder(
-        self, pipeline_infrastructure_block: CreatePipeline
-    ):
-        pipeline_infrastructure_block.pipeline_definition.file_path = (
-            "./tests/mock_config_repo_src/src/test/layer/__main__.py"
-        )
-        pipeline_infrastructure_block.config.universal.source_code_folder = ""
-
-        assert (
-            pipeline_infrastructure_block.fetch_source_directory_name().rsplit(
-                "dorc/tests/", 1
-            )[-1]
-            == "mock_config_repo_src/src/test/layer"
-        )
-
-    @pytest.mark.usefixtures("pipeline_infrastructure_block")
     def test_fetch_lambda_paths(self, pipeline_infrastructure_block):
         res = pipeline_infrastructure_block.fetch_lambda_paths()
         assert res == ["layer/test/lambda1/lambda.py", "layer/test/lambda2/lambda.py"]

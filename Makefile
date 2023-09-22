@@ -32,7 +32,7 @@ else ifeq ($(instance), $(INFRA_STACK_NAME))
 	PYTHONPATH=$(DIR_INFRA) pulumi up --config-file $(DIR_INFRA)/Pulumi.$(env).yaml --show-replacement-steps $(ARGS)
 else
 	make infra/set-stack stack=$(layer)-$(env)-$(instance) dir=$(DIR)
-	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(env).yaml --show-replacement-steps $(ARGS)
+	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(env).yaml --show-replacement-steps $(ARGS) --logtostderr
 endif
 
 infra/destroy:

@@ -4,7 +4,6 @@ from typing import Optional
 from pydantic import BaseModel  # pylint: disable=no-name-in-module
 from pulumi import Output
 
-from infrastructure.core.models.definition import rAPIdTrigger
 from utils.exceptions import (
     CannotFindEnvironmentVariableException,
     InvalidConfigDefinitionException,
@@ -12,8 +11,16 @@ from utils.exceptions import (
 
 
 class rAPIdConfig(BaseModel):
+    url: str
     prefix: str
     user_pool_id: str
+    dorc_rapid_client_id: str
+
+
+class LayerConfig(BaseModel):
+    folder: str
+    source: str
+    target: str
 
 
 class UniversalConfig(BaseModel):
@@ -22,6 +29,7 @@ class UniversalConfig(BaseModel):
     tags: Optional[dict] = dict()
     source_code_folder: Optional[str] = "src"
     config_repo_path: Optional[str] = None
+    layer_config: Optional[list[LayerConfig]] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -36,6 +44,13 @@ class UniversalConfig(BaseModel):
                 f"No environment variable found for {environment_variable}"
             )
         return value
+
+    def get_layer_config_from_folder(self, folder: str) -> LayerConfig:
+        if self.layer_config is None:
+            raise InvalidConfigDefinitionException("Layer config is not defined")
+        for layer_config in self.layer_config:  # pylint: disable=not-an-iterable
+            if layer_config.folder == folder:
+                return layer_config
 
     @property
     def source_code_path(self) -> str:

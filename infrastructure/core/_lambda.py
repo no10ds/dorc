@@ -5,12 +5,14 @@ import pulumi_aws as aws
 import pulumi_docker as docker
 
 from checksumdir import dirhash
-from pulumi_aws.lambda_ import Function, FunctionEnvironmentArgs
+from pulumi_aws.lambda_ import Function
+from pulumi_aws.cognito import UserPoolClient
 from pulumi import ResourceOptions, StackReference
 
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
 from infrastructure.universal.ecr import CreateEcrResource
+from infrastructure.providers.rapid_client import RapidClient
 
 
 class CreatePipelineLambdaFunction(CreateResourceBlock):
@@ -27,7 +29,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
         lambda_role,
         function_name: str,
         code_path: str,
-        rapid_client: aws.cognito.UserPoolClient | None,
+        rapid_client: UserPoolClient | RapidClient | None,
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.project = self.config.project
@@ -130,7 +132,9 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
             return {}
         else:
             return {
-                "RAPID_CLIENT_KEY": self.rapid_client.id,
+                "RAPID_CLIENT_KEY": self.rapid_client.id
+                if isinstance(self.rapid_client, UserPoolClient)
+                else self.rapid_client.client_id,
                 "RAPID_CLIENT_SECRET": self.rapid_client.client_secret,
             }
 
