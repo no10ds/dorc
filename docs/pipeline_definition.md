@@ -138,10 +138,3 @@ rAPIdTrigger(
 * `domain` - The rAPId domain of the dataset you want this pipeline to be triggered from.
 * `name` - The rAPId dataset name for the given domain that you want this pipeline to be triggered from.
 * `client_key` - Optionally pass the specific rAPId client key that the pipeline will use to authenticate with rAPId. If no `client_key` is specified *dorc* will automatically create a new client in your rAPId instance for the pipeline.
-
-To authenticate with rAPId inside any of your pipeline functions *dorc* automatically sets a client key and client secret into the function environment variables. These can be read from the values:
-
-```
-RAPID_CLIENT_KEY
-RAPID_CLIENT_SECRET
-```

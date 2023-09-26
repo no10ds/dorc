@@ -9,7 +9,11 @@ from pulumi.dynamic.dynamic import CreateResult, DiffResult, UpdateResult
 
 from rapid import Rapid
 from rapid import RapidAuth
-from rapid.exceptions import InvalidPermissionsException
+from rapid.exceptions import (
+    InvalidPermissionsException,
+    SubjectAlreadyExistsException,
+    SubjectNotFoundException,
+)
 
 
 def create_rapid_connection(props: dict) -> Rapid:
@@ -21,6 +25,8 @@ def create_rapid_connection(props: dict) -> Rapid:
 
 class RapidClientProvider(ResourceProvider):
     def create(self, props) -> CreateResult:
+        print("PROPS", props)
+
         rapid = create_rapid_connection(props)
         try:
             client = self.create_client(
@@ -33,16 +39,24 @@ class RapidClientProvider(ResourceProvider):
                     "client_secret": client["client_secret"],
                 },
             )
-        except InvalidPermissionsException:
-            raise Exception("Invalid rAPId domain or layer configuration")
+        except SubjectAlreadyExistsException as ex:
+            raise ValueError(
+                "Client already exists, try a different name or remove it from rAPId"
+            ) from ex
+        except InvalidPermissionsException as ex:
+            raise ValueError("Invalid rAPId domain or layer configuration") from ex
 
     def update(self, _id: str, _olds: Any, _news: Any) -> UpdateResult:
         rapid = create_rapid_connection(_news)
         if _olds.get("client_name") != _news.get("client_name"):
-            self.delete_client(rapid, _olds["client_id"])
-            client = self.create_client(
-                rapid, _news["client_name"], _news["permissions"]
-            )
+            try:
+                self.delete_client(rapid, _olds["client_id"])
+                client = self.create_client(
+                    rapid, _news["client_name"], _news["permissions"]
+                )
+            except InvalidPermissionsException as ex:
+                raise ValueError("Invalid rAPId domain or layer configuration") from ex
+
             return UpdateResult(
                 {
                     **_news,
@@ -65,7 +79,7 @@ class RapidClientProvider(ResourceProvider):
     def delete_client(self, rapid: Rapid, client_id: str):
         try:
             rapid.delete_client(client_id)
-        except Exception:
+        except SubjectNotFoundException:
             pass
 
     def create_client(
@@ -77,7 +91,10 @@ class RapidClientProvider(ResourceProvider):
     def update_client_permissions(
         self, rapid: Rapid, client_id: str, permissions: list[str]
     ) -> None:
-        rapid.update_subject_permissions(client_id, permissions)
+        try:
+            rapid.update_subject_permissions(client_id, permissions)
+        except InvalidPermissionsException as ex:
+            raise ValueError("Invalid rAPId domain or layer configuration") from ex
 
 
 class RapidClient(Resource):

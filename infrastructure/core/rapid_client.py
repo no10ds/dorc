@@ -58,9 +58,9 @@ def create_rapid_permissions(
     config: Config, pipeline_definition: PipelineDefinition, layer_folder: str
 ) -> list[str]:
     domain = pipeline_definition.trigger.domain
-    layer_config = config.universal.get_layer_config_from_folder(layer_folder)
+    rapid_layer_config = config.universal.get_layer_config_from_folder(layer_folder)
     actions = ["READ", "WRITE"]
-    layers = [layer_config.source, layer_config.target]
+    layers = [rapid_layer_config.source, rapid_layer_config.target]
     permissions = ["PRIVATE", f"PROTECTED_{domain}"]
     return [
         f"{action}_{layer.upper()}_{permission.upper()}"

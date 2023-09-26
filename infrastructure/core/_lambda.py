@@ -136,6 +136,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
                 if isinstance(self.rapid_client, UserPoolClient)
                 else self.rapid_client.client_id,
                 "RAPID_CLIENT_SECRET": self.rapid_client.client_secret,
+                "RAPID_URL": self.config.rAPId_config.url,
             }
 
     def export(self):

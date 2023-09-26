@@ -29,7 +29,7 @@ class UniversalConfig(BaseModel):
     tags: Optional[dict] = dict()
     source_code_folder: Optional[str] = "src"
     config_repo_path: Optional[str] = None
-    layer_config: Optional[list[LayerConfig]] = None
+    rapid_layer_config: Optional[list[LayerConfig]] = None
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -45,12 +45,14 @@ class UniversalConfig(BaseModel):
             )
         return value
 
-    def get_layer_config_from_folder(self, folder: str) -> LayerConfig:
-        if self.layer_config is None:
+    def get_rapid_layer_config_from_folder(self, folder: str) -> LayerConfig:
+        if self.rapid_layer_config is None:
             raise InvalidConfigDefinitionException("Layer config is not defined")
-        for layer_config in self.layer_config:  # pylint: disable=not-an-iterable
-            if layer_config.folder == folder:
-                return layer_config
+        for (
+            rapid_layer_config
+        ) in self.rapid_layer_config:  # pylint: disable=not-an-iterable
+            if rapid_layer_config.folder == folder:
+                return rapid_layer_config
 
     @property
     def source_code_path(self) -> str:

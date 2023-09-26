@@ -19,6 +19,7 @@ UniversalConfig(
 * `project` - Your high-level project name.
 * `tags` - An optional dictionary of key-value tags to apply to every created resource.
 * `source_code_folder` - The name of the folder within your private source repository where the pipeline definitions are saved. The default value is `src`.
+* `rapid_layer_config` - An optional value that specifies the list of `LayerConfig` blocks that maps your *dorc* folder structure to your rAPId layers. See the [rAPId integration](/rapid_integration) for further information.
 
 ## Configuration
 
@@ -65,3 +66,5 @@ rAPIdConfig(
 
 * `prefix` - Your rAPId instance infrastructure prefix value.
 * `user_pool_id` - Your rAPId Cognito user pool id.
+* `url` - Your rAPId url e.g. `https://instance.rapid.com/api`
+* `dorc_rapid_client_id` - The rAPId client id of the *dorc* client. *dorc* requires a rAPId client with the `USER_ADMIN` permission
