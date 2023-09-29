@@ -4,7 +4,7 @@ import mock
 import os
 import json
 
-from utils.config import UniversalConfig, Config
+from utils.config import UniversalConfig, Config, LayerConfig
 from infrastructure.core.models.definition import (
     PipelineDefinition,
     CronTrigger,
@@ -42,6 +42,9 @@ def universal_config(monkeypatch) -> UniversalConfig:
         region="eu-west-2",
         project="test-pipelines",
         tags={"tag": "test"},
+        rapid_layer_config=[
+            LayerConfig(folder="layer", source="default", target="default")
+        ],
     )
 
 

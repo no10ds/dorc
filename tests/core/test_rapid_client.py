@@ -2,10 +2,10 @@ from mock import MagicMock, Mock, patch, call, ANY
 import pytest
 import pulumi
 
-from infrastructure.core.rapid_client import CreateRapidClient
+from infrastructure.core.rapid_client import CreateRapidClient, create_rapid_permissions
 from infrastructure.core.creator import CreatePipeline
 from infrastructure.core.models.definition import rAPIdTrigger
-from utils.config import rAPIdConfig
+from utils.config import rAPIdConfig, LayerConfig
 
 
 class TestCreateRapidClient:
@@ -26,7 +26,10 @@ class TestCreateRapidClient:
             domain="domain", name="name", client_key="client-key"
         )
         pipeline_infrastructure_block.config.rAPId_config = rAPIdConfig(
-            prefix="prefix", user_pool_id="xxx-yyy-user-pool"
+            prefix="prefix",
+            user_pool_id="xxx-yyy-user-pool",
+            dorc_rapid_client_id="dorc-xxx-yyy",
+            url="https://rapid.example.com/api",
         )
         rapid_client_resource_block = CreateRapidClient(
             pipeline_infrastructure_block.config,
@@ -50,7 +53,7 @@ class TestCreateRapidClient:
             assert _id == "client-key"
             assert user_pool_id == "xxx-yyy-user-pool"
 
-        user_pool_client = rapid_client_resource_block.fetch_secret().user_pool_client
+        user_pool_client = rapid_client_resource_block.fetch_secret().client
         return pulumi.Output.all(
             user_pool_client.id, user_pool_client.user_pool_id
         ).apply(check_user_pool_client)
@@ -59,14 +62,35 @@ class TestCreateRapidClient:
     @pulumi.runtime.test
     def test_rapid_client_apply(self, rapid_client_resource_block):
         def check_user_pool_client(args):
-            name, user_pool_id, generate_secret = args
-            assert name == "test-pipelines-test-client"
-            assert user_pool_id == "xxx-yyy-user-pool"
-            assert generate_secret is True
+            client_name, permissions = args
+            assert client_name == "test-pipelines_test_default_test-pipeline"
+            assert permissions == ["READ_PRIVATE"]
 
-        user_pool_client = rapid_client_resource_block.apply().user_pool_client
+        user_pool_client = rapid_client_resource_block.apply(
+            pipeline_name="test-pipeline", layer="default", permissions=["READ_PRIVATE"]
+        ).client
         return pulumi.Output.all(
-            user_pool_client.name,
-            user_pool_client.user_pool_id,
-            user_pool_client.generate_secret,
+            user_pool_client.client_name, user_pool_client.permissions
         ).apply(check_user_pool_client)
+
+
+class TestCreateRapidPermissions:
+    @pytest.mark.usefixtures("config", "pipeline_definition")
+    def test_create_rapid_permissions(self, config, pipeline_definition):
+        pipeline_definition.trigger = rAPIdTrigger(
+            domain="domain", name="name", client_key="client-key"
+        )
+        config.universal.rapid_layer_config = [
+            LayerConfig(folder="layer", source="default1", target="default2")
+        ]
+        permissions = create_rapid_permissions(config, pipeline_definition, "layer")
+        assert permissions == [
+            "READ_DEFAULT1_PRIVATE",
+            "READ_DEFAULT1_PROTECTED_DOMAIN",
+            "READ_DEFAULT2_PRIVATE",
+            "READ_DEFAULT2_PROTECTED_DOMAIN",
+            "WRITE_DEFAULT1_PRIVATE",
+            "WRITE_DEFAULT1_PROTECTED_DOMAIN",
+            "WRITE_DEFAULT2_PRIVATE",
+            "WRITE_DEFAULT2_PROTECTED_DOMAIN",
+        ]

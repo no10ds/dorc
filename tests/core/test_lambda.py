@@ -1,11 +1,15 @@
-from mock import MagicMock, Mock, patch, call, ANY
+from mock import MagicMock, Mock, patch
 import pytest
 import pulumi
 
 from pulumi_docker import Image
 import pulumi_aws as aws
+from pulumi_aws.cognito import UserPoolClient
 from infrastructure.core._lambda import CreatePipelineLambdaFunction
 from infrastructure.core.creator import CreatePipeline
+from infrastructure.core.rapid_client import CreateRapidClient
+from infrastructure.core.models.definition import rAPIdTrigger
+from utils.config import rAPIdConfig
 
 from tests.mock import MockedEcrAuthentication
 
@@ -158,3 +162,66 @@ class TestCreateLambda:
         lambda_resource_block.create_lambda.assert_called_once_with(
             security_group, "image"
         )
+
+    @pytest.mark.usefixtures("pipeline_infrastructure_block")
+    @pulumi.runtime.test
+    def test_lambda_function_created_with_rapid(self, pipeline_infrastructure_block):
+        user_pool_id = "xxx-yyy-user-pool"
+        client_key = "client-key"
+        client_secret = "client-secret"
+        rapid_url = "https://rapid.example.com/api"
+
+        def check_lambda_function(args):
+            name, environment = args
+            assert name == "test-pipelines-test-test-function"
+            assert environment == {
+                "variables": {
+                    "RAPID_CLIENT_KEY": client_key,
+                    "RAPID_CLIENT_SECRET": client_secret,
+                    "RAPID_URL": rapid_url,
+                }
+            }
+
+        pipeline_infrastructure_block.pipeline_definition.trigger = rAPIdTrigger(
+            domain="domain", name="name", client_key=client_key
+        )
+        pipeline_infrastructure_block.config.rAPId_config = rAPIdConfig(
+            prefix="prefix",
+            user_pool_id=user_pool_id,
+            dorc_rapid_client_id="dorc-xxx-yyy",
+            url=rapid_url,
+        )
+        rapid_client_resource_block = CreateRapidClient(
+            pipeline_infrastructure_block.config,
+            pipeline_infrastructure_block.aws_provider,
+            pipeline_infrastructure_block.environment,
+            pipeline_infrastructure_block.pipeline_definition.trigger,
+        )
+        rapid_client_resource_block.get_client_from_user_pool = Mock(
+            return_value=UserPoolClient.get(
+                resource_name="user-pool-client",
+                id=client_key,
+                user_pool_id=user_pool_id,
+                client_secret=client_secret,
+            )
+        )
+
+        lambda_resource_block = CreatePipelineLambdaFunction(
+            pipeline_infrastructure_block.config,
+            pipeline_infrastructure_block.aws_provider,
+            pipeline_infrastructure_block.environment,
+            pipeline_infrastructure_block.universal_stack_reference,
+            "test:lambda:role",
+            "test-function",
+            "test/function",
+            rapid_client_resource_block.fetch_secret().client,
+        )
+
+        lambda_function = lambda_resource_block.create_lambda(
+            aws.ec2.SecurityGroup("test-pipelines-test-test-function-sg"),
+            Image(resource_name="test-image", image_name="test-image", skip_push=True),
+        )
+
+        return pulumi.Output.all(
+            lambda_function.name, lambda_function.environment
+        ).apply(check_lambda_function)

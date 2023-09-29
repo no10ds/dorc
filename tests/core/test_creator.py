@@ -119,10 +119,13 @@ class TestCreatePipeline:
         pipeline_definition.trigger = rAPIdTrigger(
             domain="domain", name="name", client_key="client_key"
         )
-        config.rAPId_config = rAPIdConfig(prefix="prefix", user_pool_id="xxx-yyy-zzz")
-        mock_rapid_client.return_value.fetch_secret.return_value.user_pool_client = (
-            "mock_return"
+        config.rAPId_config = rAPIdConfig(
+            prefix="prefix",
+            user_pool_id="xxx-yyy-zzz",
+            dorc_rapid_client_id="dorc-xxx-yyy",
+            url="https://rapid.example.com/api",
         )
+        mock_rapid_client.return_value.fetch_secret.return_value.client = "mock_return"
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         assert pipeline_infrastructure_block.create_rapid_client() == "mock_return"
 
@@ -135,11 +138,16 @@ class TestCreatePipeline:
         mock_rapid_client: MagicMock,
         mock_pulumi,
         mock_pulumi_config,
-        config: Config,
+        config,
         pipeline_definition: PipelineDefinition,
     ):
         pipeline_definition.trigger = rAPIdTrigger(domain="domain", name="name")
-        config.rAPId_config = rAPIdConfig(prefix="prefix", user_pool_id="xxx-yyy-zzz")
-        mock_rapid_client.return_value.outputs.user_pool_client = "mock_return"
+        config.rAPId_config = rAPIdConfig(
+            prefix="prefix",
+            user_pool_id="xxx-yyy-zzz",
+            dorc_rapid_client_id="dorc-xxx-yyy",
+            url="https://rapid.example.com/api",
+        )
+        mock_rapid_client.return_value.apply.return_value.client = "mock_return"
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
         assert pipeline_infrastructure_block.create_rapid_client() == "mock_return"
