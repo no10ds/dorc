@@ -55,4 +55,5 @@ To use rAPId within your pipeline function *dorc* automatically sets a client ke
 ```
 RAPID_CLIENT_KEY
 RAPID_CLIENT_SECRET
+RAPID_URL
 ```
