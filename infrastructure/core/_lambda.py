@@ -132,9 +132,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
             return {}
         else:
             return {
-                "RAPID_CLIENT_KEY": self.rapid_client.id
-                if isinstance(self.rapid_client, UserPoolClient)
-                else self.rapid_client.client_id,
+                "RAPID_CLIENT_KEY": self.rapid_client.id,
                 "RAPID_CLIENT_SECRET": self.rapid_client.client_secret,
                 "RAPID_URL": self.config.rAPId_config.url,
             }

@@ -1,12 +1,10 @@
-from typing import Type
-
 from infrastructure.core.models.definition import PipelineDefinition, rAPIdTrigger
 from utils.config import rAPIdConfig
 from utils.exceptions import InvalidConfigDefinitionException
 
 
 def validate_rapid_trigger(
-    pipeline_definition: Type[PipelineDefinition], rapid_config: Type[rAPIdConfig]
+    pipeline_definition: PipelineDefinition, rapid_config: rAPIdConfig | None
 ):
     """
     Need to handle 2 different options

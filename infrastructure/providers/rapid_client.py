@@ -2,11 +2,13 @@ from typing import Any, Optional
 
 import pulumi
 
-from pulumi import ComponentResource, Output, Input
-from pulumi_aws.cognito import UserPoolClient
-from pulumi.dynamic import Resource, ResourceProvider, CreateResult
-from pulumi.dynamic.dynamic import CreateResult, DiffResult, UpdateResult
-
+from pulumi import Output
+from pulumi.dynamic.dynamic import (
+    CreateResult,
+    UpdateResult,
+    ResourceProvider,
+    Resource,
+)
 from rapid import Rapid
 from rapid import RapidAuth
 from rapid.exceptions import (
@@ -25,8 +27,6 @@ def create_rapid_connection(props: dict) -> Rapid:
 
 class RapidClientProvider(ResourceProvider):
     def create(self, props) -> CreateResult:
-        print("PROPS", props)
-
         rapid = create_rapid_connection(props)
         try:
             client = self.create_client(
@@ -37,6 +37,7 @@ class RapidClientProvider(ResourceProvider):
                 {
                     "client_id": client["client_id"],
                     "client_secret": client["client_secret"],
+                    **props,
                 },
             )
         except SubjectAlreadyExistsException as ex:
@@ -48,27 +49,8 @@ class RapidClientProvider(ResourceProvider):
 
     def update(self, _id: str, _olds: Any, _news: Any) -> UpdateResult:
         rapid = create_rapid_connection(_news)
-        if _olds.get("client_name") != _news.get("client_name"):
-            try:
-                self.delete_client(rapid, _olds["client_id"])
-                client = self.create_client(
-                    rapid, _news["client_name"], _news["permissions"]
-                )
-            except InvalidPermissionsException as ex:
-                raise ValueError("Invalid rAPId domain or layer configuration") from ex
-
-            return UpdateResult(
-                {
-                    **_news,
-                    "client_id": client["client_id"],
-                    "client_secret": client["client_secret"],
-                }
-            )
-
         if _olds.get("permissions") != _news.get("permissions"):
-            self.update_client_permissions(
-                rapid, _news["client_id"], _news["permissions"]
-            )
+            self.update_client_permissions(rapid, _id, _news["permissions"])
 
         return UpdateResult({**_news})
 
@@ -98,8 +80,10 @@ class RapidClientProvider(ResourceProvider):
 
 
 class RapidClient(Resource):
-    client_id: Output[str]
+    id: Output[str]  # Acts as the client_id to match the UserPoolClient output
     client_secret: Output[str]
+    dorc_client_id: Output[str]
+    dorc_client_secret: Output[str]
 
     def __init__(
         self,
@@ -117,7 +101,6 @@ class RapidClient(Resource):
             "rapid_url": rapid_url,
             "client_name": client_name,
             "permissions": permissions,
-            "client_id": None,
             "client_secret": None,
         }
         super().__init__(RapidClientProvider(), resource_name, args, opts)

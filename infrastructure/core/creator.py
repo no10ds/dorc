@@ -95,12 +95,14 @@ class CreatePipeline(CreateInfrastructureBlock):
             CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
         )
 
-    def create_rapid_client(self) -> UserPoolClient | RapidClient:
+    def create_new_rapid_client_or_fetch_details(self) -> UserPoolClient | RapidClient:
         trigger = self.pipeline_definition.trigger
         client_key = trigger.client_key
         rapid_client = CreateRapidClient(
             self.config, self.aws_provider, self.environment, trigger
         )
+        # If they have not supplied a rAPId client key via the trigger automatically
+        # create a new rAPId client
         if client_key is None:
             pipeline_name = self.file_structure.pipeline_name
             layer = self.file_structure.layer
@@ -109,19 +111,22 @@ class CreatePipeline(CreateInfrastructureBlock):
             )
             return rapid_client.apply(pipeline_name, layer, permissions).client
 
+        # Otherwise fetch an existing rAPId client details use their supplied client key
         return rapid_client.fetch_secret().client
 
     def apply(self):
-        rapid_client = None
+        rapid_client_details = None
+        # If we have a rapid trigger we need to get the rapid client details
         if self.pipeline_definition.trigger is not None and isinstance(
             self.pipeline_definition.trigger, rAPIdTrigger
         ):
-            rapid_client = self.create_rapid_client()
+            rapid_client_details = self.create_new_rapid_client_or_fetch_details()
 
         lambda_paths = self.lambda_function_paths()
         lambda_paths.apply(
             lambda names: [
-                self.apply_lambda_function(name, rapid_client).apply() for name in names
+                self.apply_lambda_function(name, rapid_client_details).apply()
+                for name in names
             ]
         ).apply(
             lambda outputs: {

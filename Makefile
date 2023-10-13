@@ -32,7 +32,7 @@ else ifeq ($(instance), $(INFRA_STACK_NAME))
 	PYTHONPATH=$(DIR_INFRA) pulumi up --config-file $(DIR_INFRA)/Pulumi.$(env).yaml --show-replacement-steps $(ARGS)
 else
 	make infra/set-stack stack=$(layer)-$(env)-$(instance) dir=$(DIR)
-	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(env).yaml --show-replacement-steps $(ARGS) --logtostderr
+	PYTHONPATH=$(DIR) pulumi up --config-file $(DIR)/Pulumi.$(env).yaml --show-replacement-steps $(ARGS)
 endif
 
 infra/destroy:
@@ -44,7 +44,7 @@ else ifeq ($(instance), $(INFRA_STACK_NAME))
 	PYTHONPATH=$(DIR_INFRA) pulumi destroy --config-file $(DIR_INFRA)/Pulumi.$(env).yaml $(ARGS)
 else
 	make infra/set-stack stack=$(layer)-$(env)-$(instance) dir=$(DIR)
-	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.$(env).yaml $(ARGS)
+	PYTHONPATH=$(DIR) pulumi destroy --config-file $(DIR)/Pulumi.$(env).yaml --refresh $(ARGS)
 endif
 
 test:
