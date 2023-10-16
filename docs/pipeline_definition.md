@@ -17,7 +17,7 @@ PipelineDefinition(
 - `file_path` - The relative path to the pipeline `__main__.py` file. Set this to `__file__`.
 - `description` - Optional description used to describe this pipeline.
 - `functions` - A list of `Function` definitions that will define the content of the pipeline.
-- `trigger` - An optional AWS trigger to start the pipeline, can be one of an `S3Trigger` or `CronTrigger`.
+- `trigger` - An optional AWS trigger to start the pipeline, can be one of an `S3Trigger`, `rAPIdTrigger` or `CronTrigger`.
 
 ## Function
 
@@ -137,4 +137,6 @@ rAPIdTrigger(
 
 * `domain` - The rAPId domain of the dataset you want this pipeline to be triggered from.
 * `name` - The rAPId dataset name for the given domain that you want this pipeline to be triggered from.
-* `client_key` - Optionally pass the specific rAPId client key that the pipeline will use to authenticate with rAPId. If no `client_key` is specified *dorc* will automatically create a new client in your rAPId instance for the pipeline.
+* `client_key` - Optionally pass the specific rAPId client key that the pipeline will use to authenticate with rAPId.
+
+> Note: If no `client_key` is specified *dorc* will automatically create a new client in your rAPId instance for the pipeline, giving read and write permissions for both the source and target layers for the domain.

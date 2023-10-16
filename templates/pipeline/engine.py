@@ -36,7 +36,7 @@ config = Config(
     {% if rapid_enabled %}
     rapid_config=rAPIdConfig(
         url="CHANGE_ME",
-        prefix="CHANGE_ME",
+        data_bucket_name="CHANGE_ME",
         user_pool_id="CHANGE_ME",
         dorc_rapid_client_id="CHANGE_ME",
     )
@@ -51,9 +51,6 @@ pipeline_definition = PipelineDefinition(
     functions=[Function(name="{{ first_function_name }}")],
 )
 """
-
-print(os.getenv("PIPELINE_TEMPLATE_PATH", "./templates/pipeline/"))
-
 
 environment = Environment(  # nosec B701
     loader=FileSystemLoader(

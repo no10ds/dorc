@@ -1,10 +1,31 @@
 *dorc* is built to include an easy integration with [rAPId](https://rapid.readthedocs.io/en/latest/) and can be optionally enabled. To enable rAPId for your pipelines you want to apply both the `rAPId_config` attribute in the configuration model and also the `rapid_layer_config` attribute in the universal configuration model.
 
-## rAPId Integration Configuration
+## rAPId Config
 
-### rAPId Layer Configuration
+Alongside the layer configuration you set a further `rAPIdConfig` attribute to the `Configuration` block for environment specific details on your rAPId instance for which to use.
 
-The layer configuration is a block applied to the universal configuration that allows *dorc* to understand how the folder structure of your pipelines correspond to your layers within rAPId. For instance consider the folder structure of your *dorc* project below
+```python
+from utils.config import rAPIdConfig
+
+rAPIdConfig(
+    url: str
+    data_bucket_name: str
+    user_pool_id: str
+    dorc_rapid_client_id: str
+)
+```
+
+* `url` - Your rAPId url e.g. `https://instance.rapid.com/api`
+* `data_bucket_name` - The name of the S3 bucket that's used as the rAPId data bucket.
+
+> Note: The data bucket will need to have Amazon EventBridge notifications enabled
+
+* `user_pool_id` - Your rAPId Cognito user pool id.
+* `dorc_rapid_client_id` - The rAPId client id of the *dorc* client. *dorc* requires a rAPId client with the `USER_ADMIN` permission
+
+## rAPId Layer Configuration
+
+The layer configuration is a block applied to the universal configuration that allows *dorc* to understand how the folder structure of your pipelines correspond to your layers within rAPId. For instance consider the folder structure of your *dorc* project below:
 
 ```
 /pipeline-config
@@ -32,10 +53,6 @@ UniversalConfig(
 )
 ```
 
-### rAPId Config
-
-Alongside the layer configuration you set a further `rAPIdConfig` attribute to the `Configuration` block for environment specific details on your rAPId instance for which to use. See the [further details](/config/#rapid-configuration) on the values required.
-
 ## Pipeline rAPId Client Credentials
 
 There are two ways to use a rAPId client within a pipeline:
@@ -53,7 +70,7 @@ There are two ways to use a rAPId client within a pipeline:
 To use rAPId within your pipeline function *dorc* automatically sets a client key and client secret into the function environment variables. These can read from the values:
 
 ```
-RAPID_CLIENT_KEY
+RAPID_CLIENT_ID
 RAPID_CLIENT_SECRET
 RAPID_URL
 ```
