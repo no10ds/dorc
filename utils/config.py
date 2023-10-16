@@ -12,7 +12,7 @@ from utils.exceptions import (
 
 class rAPIdConfig(BaseModel):
     url: str
-    prefix: str
+    data_bucket_name: str
     user_pool_id: str
     dorc_rapid_client_id: str
 

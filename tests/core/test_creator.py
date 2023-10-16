@@ -120,6 +120,7 @@ class TestCreatePipeline:
             domain="domain", name="name", client_key="client_key"
         )
         config.rAPId_config = rAPIdConfig(
+            data_bucket_name="rapid-bucket",
             prefix="prefix",
             user_pool_id="xxx-yyy-zzz",
             dorc_rapid_client_id="dorc-xxx-yyy",
@@ -127,7 +128,10 @@ class TestCreatePipeline:
         )
         mock_rapid_client.return_value.fetch_secret.return_value.client = "mock_return"
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        assert pipeline_infrastructure_block.create_rapid_client() == "mock_return"
+        assert (
+            pipeline_infrastructure_block.create_new_rapid_client_or_fetch_details()
+            == "mock_return"
+        )
 
     @pytest.mark.usefixtures(
         "mock_pulumi", "mock_pulumi_config", "config", "pipeline_definition"
@@ -143,6 +147,7 @@ class TestCreatePipeline:
     ):
         pipeline_definition.trigger = rAPIdTrigger(domain="domain", name="name")
         config.rAPId_config = rAPIdConfig(
+            data_bucket_name="rapid-bucket",
             prefix="prefix",
             user_pool_id="xxx-yyy-zzz",
             dorc_rapid_client_id="dorc-xxx-yyy",
@@ -150,4 +155,7 @@ class TestCreatePipeline:
         )
         mock_rapid_client.return_value.apply.return_value.client = "mock_return"
         pipeline_infrastructure_block = CreatePipeline(config, pipeline_definition)
-        assert pipeline_infrastructure_block.create_rapid_client() == "mock_return"
+        assert (
+            pipeline_infrastructure_block.create_new_rapid_client_or_fetch_details()
+            == "mock_return"
+        )

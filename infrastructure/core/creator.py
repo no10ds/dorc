@@ -19,7 +19,7 @@ from infrastructure.core.models.definition import PipelineDefinition, rAPIdTrigg
 from infrastructure.core.validators import validate_rapid_trigger
 from infrastructure.providers.rapid_client import RapidClient
 from utils.abstracts import CreateInfrastructureBlock
-from utils.config import Config
+from utils.config import Config, LayerConfig
 from utils.constants import (
     LAMBDA_ROLE_ARN,
     LAMBDA_HANDLER_FILE,
@@ -35,8 +35,16 @@ from utils.filesystem import extract_lambda_name_from_filepath, path_to_name
 class FileStructure:
     def __init__(self, lambda_paths: list[str]):
         self.lambda_paths = lambda_paths
+        # TODO: This is probably better named as 'processing_layer' or something similar
         self.layer = self.lambda_paths[0].split("/")[0]
         self.pipeline_name = self.lambda_paths[0].split("/")[1]
+
+    def get_rapid_raw_target_from_layer(
+        self, rapid_layer_config: list[LayerConfig]
+    ) -> tuple[str, str]:
+        for rapid_layers in rapid_layer_config:
+            if rapid_layers.folder == self.layer:
+                return rapid_layers.source, rapid_layers.target
 
 
 class CreatePipeline(CreateInfrastructureBlock):
@@ -81,6 +89,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.config,
             self.aws_provider,
             self.environment,
+            self.file_structure,
             self.pipeline_definition.trigger,
         )
 

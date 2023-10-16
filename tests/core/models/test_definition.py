@@ -10,19 +10,22 @@ class TestRapidTrigger:
         return rAPIdTrigger(domain="domain", name="name")
 
     @pytest.mark.usefixtures("rapid_trigger")
-    def test_create_rapid_crawler_name(self, rapid_trigger: rAPIdTrigger):
-        crawler_name = rapid_trigger.create_rapid_crawler_name("rapid")
-        assert crawler_name == "rapid_crawler/domain/name"
+    def test_create_s3_path_prefix(self, rapid_trigger: rAPIdTrigger):
+        s3_path_prefix = rapid_trigger.create_s3_path_prefix("raw")
+        assert s3_path_prefix == "data/raw/domain/name/"
 
     @pytest.mark.usefixtures("rapid_trigger")
     def test_event_pattern(self, rapid_trigger):
-        event_pattern = rapid_trigger.event_pattern("rapid")
+        event_pattern = rapid_trigger.event_pattern("raw", "rapid-bucket")
         assert event_pattern == json.dumps(
             {
-                "source": ["aws.glue"],
+                "source": ["aws.s3"],
+                "detail-type": ["Object Created"],
                 "detail": {
-                    "crawlerName": ["rapid_crawler/domain/name"],
-                    "state": ["Succeeded"],
+                    "bucket": {"name": ["rapid-bucket"]},
+                    "object": {
+                        "key": [{"prefix": "data/raw/domain/name/"}],
+                    },
                 },
             }
         )
@@ -48,11 +51,10 @@ class TestS3Trigger:
         assert event_pattern == json.dumps(
             {
                 "source": ["aws.s3"],
+                "detail-type": ["Object Created"],
                 "detail": {
-                    "eventSource": ["s3.amazonaws.com"],
-                    "eventName": ["PutObject", "CompleteMultipartUpload"],
-                    "requestParameters": {
-                        "bucketName": ["test-bucket"],
+                    "bucket": {"name": ["test-bucket"]},
+                    "object": {
                         "key": [{"prefix": "test/prefix"}],
                     },
                 },

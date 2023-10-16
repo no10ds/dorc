@@ -26,6 +26,7 @@ class TestCreateRapidClient:
             domain="domain", name="name", client_key="client-key"
         )
         pipeline_infrastructure_block.config.rAPId_config = rAPIdConfig(
+            data_bucket_name="rapid-bucket",
             prefix="prefix",
             user_pool_id="xxx-yyy-user-pool",
             dorc_rapid_client_id="dorc-xxx-yyy",

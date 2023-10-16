@@ -35,6 +35,7 @@ class TestCreateEventBridgeRule:
             pipeline_infrastructure_block.config,
             pipeline_infrastructure_block.aws_provider,
             pipeline_infrastructure_block.environment,
+            pipeline_infrastructure_block.file_structure,
             pipeline_infrastructure_block.pipeline_definition.trigger,
         )
         return event_bridge_rule_resource_block
@@ -56,6 +57,7 @@ class TestCreateEventBridgeRule:
             pipeline_infrastructure_block.config,
             pipeline_infrastructure_block.aws_provider,
             pipeline_infrastructure_block.environment,
+            pipeline_infrastructure_block.file_structure,
             pipeline_infrastructure_block.pipeline_definition.trigger,
         )
         assert event_bridge_rule_resource_block.is_rapid_trigger is True
@@ -91,13 +93,10 @@ class TestCreateEventBridgeRule:
             assert event_pattern == json.dumps(
                 {
                     "source": ["aws.s3"],
+                    "detail-type": ["Object Created"],
                     "detail": {
-                        "eventSource": ["s3.amazonaws.com"],
-                        "eventName": ["PutObject", "CompleteMultipartUpload"],
-                        "requestParameters": {
-                            "bucketName": ["test-bucket"],
-                            "key": [{"prefix": "test-key"}],
-                        },
+                        "bucket": {"name": ["test-bucket"]},
+                        "object": {"key": [{"prefix": "test-key"}]},
                     },
                 }
             )

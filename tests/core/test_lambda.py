@@ -176,7 +176,7 @@ class TestCreateLambda:
             assert name == "test-pipelines-test-test-function"
             assert environment == {
                 "variables": {
-                    "RAPID_CLIENT_KEY": client_key,
+                    "RAPID_CLIENT_ID": client_key,
                     "RAPID_CLIENT_SECRET": client_secret,
                     "RAPID_URL": rapid_url,
                 }
@@ -186,6 +186,7 @@ class TestCreateLambda:
             domain="domain", name="name", client_key=client_key
         )
         pipeline_infrastructure_block.config.rAPId_config = rAPIdConfig(
+            data_bucket_name="rapid-bucket",
             prefix="prefix",
             user_pool_id=user_pool_id,
             dorc_rapid_client_id="dorc-xxx-yyy",

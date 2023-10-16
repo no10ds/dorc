@@ -8,29 +8,16 @@ class S3EventBridgeModel(BaseModel):
     def return_event_bridge_pattern(self):
         return {
             "source": ["aws.s3"],
+            "detail-type": ["Object Created"],
             "detail": {
-                "eventSource": ["s3.amazonaws.com"],
-                "eventName": ["PutObject", "CompleteMultipartUpload"],
-                "requestParameters": {
-                    "bucketName": [f"{self.bucket_name}"],
-                    "key": [{"prefix": self.key_prefix}],
-                },
+                "bucket": {"name": [self.bucket_name]},
+                "object": {"key": [{"prefix": self.key_prefix}]},
             },
         }
 
 
-class CrawlerEventBridgeModel(BaseModel):
-    crawler_name: str
-
-    def return_event_bridge_pattern(self):
-        return {
-            "source": ["aws.glue"],
-            "detail": {"crawlerName": [self.crawler_name], "state": ["Succeeded"]},
-        }
-
-
 class EventBridge(BaseModel):
-    model: S3EventBridgeModel | CrawlerEventBridgeModel
+    model: S3EventBridgeModel
 
     def return_event_bridge_pattern(self):
         return self.model.return_event_bridge_pattern()

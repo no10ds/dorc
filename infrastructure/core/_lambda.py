@@ -115,6 +115,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
             name=name,
             role=self.lambda_role,
             runtime=None,
+            timeout=600,
             package_type="Image",
             image_uri=image.base_image_name,
             vpc_config=aws.lambda_.FunctionVpcConfigArgs(
@@ -132,7 +133,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
             return {}
         else:
             return {
-                "RAPID_CLIENT_KEY": self.rapid_client.id,
+                "RAPID_CLIENT_ID": self.rapid_client.id,
                 "RAPID_CLIENT_SECRET": self.rapid_client.client_secret,
                 "RAPID_URL": self.config.rAPId_config.url,
             }

@@ -5,11 +5,7 @@ from typing import Optional
 
 from pydantic import BaseModel, validator  # pylint: disable=no-name-in-module
 
-from infrastructure.core.models.event_bridge import (
-    EventBridge,
-    S3EventBridgeModel,
-    CrawlerEventBridgeModel,
-)
+from infrastructure.core.models.event_bridge import EventBridge, S3EventBridgeModel
 
 
 class rAPIdTrigger(BaseModel):
@@ -17,15 +13,16 @@ class rAPIdTrigger(BaseModel):
     name: str
     client_key: Optional[str]
 
-    def create_rapid_crawler_name(self, rapid_prefix: str) -> str:
-        return f"{rapid_prefix}_crawler/{self.domain}/{self.name}"
+    def create_s3_path_prefix(self, layer: str) -> str:
+        return f"data/{layer}/{self.domain.lower()}/{self.name}/"
 
-    def event_pattern(self, rapid_prefix: str):
-        crawler_name = self.create_rapid_crawler_name(rapid_prefix)
+    def event_pattern(self, layer: str, data_bucket_name: str):
+        s3_path_prefix = self.create_s3_path_prefix(layer)
         event_bridge_model = EventBridge(
-            model=CrawlerEventBridgeModel(crawler_name=crawler_name)
+            model=S3EventBridgeModel(
+                bucket_name=data_bucket_name, key_prefix=s3_path_prefix
+            )
         )
-
         return json.dumps(event_bridge_model.return_event_bridge_pattern())
 
     def schedule_expression(self):
