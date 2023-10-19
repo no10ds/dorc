@@ -23,7 +23,9 @@ class TestCreateRapidClient:
     @pytest.fixture
     def rapid_client_resource_block(self, pipeline_infrastructure_block):
         pipeline_infrastructure_block.pipeline_definition.trigger = rAPIdTrigger(
-            domain="domain", name="name", client_key="client-key"
+            domain="domain",
+            name="name",
+            client_key="client-key",  # pragma: allowlist secret
         )
         pipeline_infrastructure_block.config.rAPId_config = rAPIdConfig(
             data_bucket_name="rapid-bucket",
@@ -79,7 +81,9 @@ class TestCreateRapidPermissions:
     @pytest.mark.usefixtures("config", "pipeline_definition")
     def test_create_rapid_permissions(self, config, pipeline_definition):
         pipeline_definition.trigger = rAPIdTrigger(
-            domain="domain", name="name", client_key="client-key"
+            domain="domain",
+            name="name",
+            client_key="client-key",  # pragma: allowlist secret
         )
         config.universal.rapid_layer_config = [
             LayerConfig(folder="layer", source="default1", target="default2")

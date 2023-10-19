@@ -109,14 +109,15 @@ class TestCreateLambda:
                 "dockerfile": "./tests/mock_config_repo_src/src/Dockerfile",
             }
             assert registry == {
-                "password": "mock_password",
+                "password": "mock_password",  # pragma: allowlist secret
                 "server": "test_url",
                 "username": "mock_username",
             }
 
         mock_dirhash.return_value = "0123abcd"
         mock_registry_info = MockedEcrAuthentication(
-            password="mock_password", user_name="mock_username"
+            password="mock_password",  # pragma: allowlist secret
+            user_name="mock_username",  # pragma: allowlist secret
         )
 
         image = lambda_resource_block.apply_docker_image_build_and_push(
@@ -135,7 +136,8 @@ class TestCreateLambda:
         function = aws.lambda_.Function(resource_name="lambda", role="abcd")
         security_group = "abc-123"
         registry_info = MockedEcrAuthentication(
-            password="mock_password", user_name="mock_username"
+            password="mock_password",  # pragma: allowlist secret
+            user_name="mock_username",  # pragma: allowlist secret
         )
 
         lambda_resource_block.authenticate_to_ecr_repo = Mock(
@@ -167,8 +169,8 @@ class TestCreateLambda:
     @pulumi.runtime.test
     def test_lambda_function_created_with_rapid(self, pipeline_infrastructure_block):
         user_pool_id = "xxx-yyy-user-pool"
-        client_key = "client-key"
-        client_secret = "client-secret"
+        client_key = "client-key"  # pragma: allowlist secret
+        client_secret = "client-secret"  # pragma: allowlist secret
         rapid_url = "https://rapid.example.com/api"
 
         def check_lambda_function(args):

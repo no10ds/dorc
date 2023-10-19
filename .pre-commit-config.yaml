@@ -13,7 +13,7 @@ repos:
     -   id: bandit
         exclude: /test
 -   repo: https://github.com/psf/black
-    rev: 22.6.0
+    rev: 23.10.0
     hooks:
     -   id: black
 -   repo: https://github.com/Yelp/detect-secrets

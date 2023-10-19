@@ -1,0 +1,43 @@
+name: dorc Release
+
+on:
+  release:
+    types: [released]
+
+jobs:
+  setup:
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Log commit SHA
+        run: echo $GITHUB_SHA
+
+dorc-release:
+  needs:
+    - setup
+  runs-on: self-hosted
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Populate .env with additional vars
+      run: |
+        echo TWINE_USERNAME=${{ secrets.TWINE_USERNAME }} >> .env
+        echo TWINE_PASSWORD=${{ secrets.TWINE_PASSWORD }} >> .env
+        echo TWINE_NON_INTERACTIVE=true >> .env
+
+    - name: Install Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Setup python environment
+      run: |
+        make venv
+        source .venv/bin/activate
+
+    - name: Release
+      run: make deploy

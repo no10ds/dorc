@@ -12,6 +12,23 @@ venv:
 	. .venv/bin/activate && \
 	pip install -r requirements.txt
 
+black:
+	black .
+
+security-check: detect-secrets detect-vulnerabilities
+
+detect-secrets:
+	@git ls-files -z | xargs -0 detect-secrets-hook --baseline .secrets.baseline
+
+ignore-secrets:
+	detect-secrets scan > .secrets.baseline
+
+detect-vulnerabilities:
+	bandit -r infrastructure/ templates/ utils/
+
+lint:
+	pylint --disable=R,C,W --ignore-paths docs/ *.py
+
 infra/init:
 	pulumi login $(INFRA_BUCKET)
 
@@ -51,14 +68,26 @@ endif
 test:
 	pytest -s -vv --disable-warnings
 
+cleanup:
+	rm -rf ./dist
+
+build:
+	python3 setup.py sdist
+
+deploy:
+	$(MAKE) cleanup
+	$(MAKE) build
+	twine upload dist/*
+
 release:
-	git checkout ${commit}
-	git tag -a "${version}" -m "Release tag for version ${version}"
-	git checkout -
-	git push origin ${version}
-	python get_latest_release_changelog.py
+	@python release.py --operation check
+	@git checkout ${commit}
+	@git tag -a "${version}" -m "Release tag for version ${version}"
+	@git checkout -
+	@git push origin ${version}
+	@python release.py --operation create-changelog
 	@gh release create ${version} -F latest_release_changelog.md
-	rm -rf latest_release_changelog.md
+	@rm -rf latest_release_changelog.md
 
 create/pipeline:
 	@python templates/pipeline/engine.py

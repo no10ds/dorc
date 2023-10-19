@@ -51,7 +51,9 @@ class TestCreateEventBridgeRule:
         self, pipeline_infrastructure_block: CreatePipeline
     ):
         pipeline_infrastructure_block.pipeline_definition.trigger = rAPIdTrigger(
-            domain="domain", name="name", client_key="client_key"
+            domain="domain",
+            name="name",
+            client_key="client_key",  # pragma: allowlist secret
         )
         event_bridge_rule_resource_block = CreateEventBridgeRule(
             pipeline_infrastructure_block.config,

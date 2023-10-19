@@ -1,7 +1,10 @@
 -e .
 -e ${CONFIG_REPO_PATH}
+bandit==1.7.4
 boto3==1.26.145
+black==23.10.0
 checksumdir==1.2.0
+detect-secrets
 gitpython==3.1.31
 mkdocs==1.4.3
 mkdocs-material==9.1.14
@@ -16,3 +19,5 @@ pytest==7.3.1
 pytest-cov==4.1.0
 python-dotenv==1.0.0
 typeguard==4.0.0
+rapid-sdk
+twine

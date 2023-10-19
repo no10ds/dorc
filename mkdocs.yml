@@ -2,6 +2,8 @@ site_name: dorc
 
 theme:
   name: 'material'
+  logo: 'favicon.ico'
+  favicon: 'favicon.ico'
 
 nav:
   - Welcome to dorc: index.md

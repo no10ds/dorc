@@ -117,7 +117,9 @@ class TestCreatePipeline:
         pipeline_definition: PipelineDefinition,
     ):
         pipeline_definition.trigger = rAPIdTrigger(
-            domain="domain", name="name", client_key="client_key"
+            domain="domain",
+            name="name",
+            client_key="client_key",  # pragma: allowlist secret
         )
         config.rAPId_config = rAPIdConfig(
             data_bucket_name="rapid-bucket",
