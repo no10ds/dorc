@@ -4,7 +4,7 @@ import mock
 import os
 import json
 
-from utils.config import UniversalConfig, Config
+from utils.config import UniversalConfig, Config, LayerConfig
 from infrastructure.core.models.definition import (
     PipelineDefinition,
     CronTrigger,
@@ -37,10 +37,14 @@ def mock_pulumi_config():
 @pytest.fixture
 def universal_config(monkeypatch) -> UniversalConfig:
     monkeypatch.setenv("CONFIG_REPO_PATH", "./tests/mock_config_repo_src")
+    monkeypatch.setenv("UNIVERSAL_STACK_NAME", "universal")
     return UniversalConfig(
         region="eu-west-2",
         project="test-pipelines",
         tags={"tag": "test"},
+        rapid_layer_config=[
+            LayerConfig(folder="layer", source="default", target="default")
+        ],
     )
 
 

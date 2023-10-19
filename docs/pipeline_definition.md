@@ -11,14 +11,13 @@ PipelineDefinition(
     functions: list[Function]
     trigger: Optional[S3Trigger | CronTrigger]
 )
-```
 
 ```
 
 - `file_path` - The relative path to the pipeline `__main__.py` file. Set this to `__file__`.
 - `description` - Optional description used to describe this pipeline.
 - `functions` - A list of `Function` definitions that will define the content of the pipeline.
-- `trigger` - An optional AWS trigger to start the pipeline, can be one of an `S3Trigger` or `CronTrigger`.
+- `trigger` - An optional AWS trigger to start the pipeline, can be one of an `S3Trigger`, `rAPIdTrigger` or `CronTrigger`.
 
 ## Function
 
@@ -119,3 +118,25 @@ CronTrigger(
 
 * `name` - Name to give this trigger
 * `cron` - String representation of a relevant aws cron. We recommend reading the [docs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html) on aws crons as these differ from regular cron definitions. For example if you wish your pipeline to be triggered every 10 minutes you can set the `cron` variable to the string `cron(0/10 * * * ? *)`
+
+### rAPId Trigger
+
+The rAPId trigger allows you to run a pipeline based on new data being uploaded to your rAPId instance. This is useful if you are wanting to apply different transformations automatically onto your rAPId data.
+
+> Note: If you have set a rAPId trigger you will also need to specify the `rAPIdConfig` otherwise *dorc* will raise an invalid configuration exception.
+
+```python
+from infrastructure.core.models.definition import rAPIdTrigger
+
+rAPIdTrigger(
+    domain: str
+    name: str
+    client_key: Optional[str]
+)
+```
+
+* `domain` - The rAPId domain of the dataset you want this pipeline to be triggered from.
+* `name` - The rAPId dataset name for the given domain that you want this pipeline to be triggered from.
+* `client_key` - Optionally pass the specific rAPId client key that the pipeline will use to authenticate with rAPId.
+
+> Note: If no `client_key` is specified *dorc* will automatically create a new client in your rAPId instance for the pipeline, giving read and write permissions for both the source and target layers for the domain.

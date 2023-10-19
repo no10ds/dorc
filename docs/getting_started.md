@@ -19,6 +19,8 @@ The folder structure for setting up *dorc* is shown below. Within a directory of
         /universal
         /infra
         /src
+        Dockerfile
+        requirements.txt
 ```
 
 ## Pipeline Config Repository
@@ -62,6 +64,7 @@ For a *dorc* project we would reference this structure within the `src` folder l
         /processed-to-curated
             /example
         Dockerfile
+        requirements.txt
 ```
 
 See further [reading](https://medium.com/codex/data-pipeline-architecture-variety-of-ways-you-can-build-your-data-pipeline-66b3dd456df1) if unsure about typical data engineering structures.
@@ -103,8 +106,17 @@ ARG CODE_PATH
 
 COPY ${CODE_PATH}/* ${LAMBDA_TASK_ROOT}/
 
+COPY requirements.tx[t]  ./global-requirements.txt
+RUN test -f global-requirements.txt && pip install -r global-requirements.txt || echo "No global requirements"
+
+COPY ${CODE_PATH}/../requirements.tx[t] ${LAMBDA_TASK_ROOT}/
+RUN test -f ${LAMBDA_TASK_ROOT}/requirements.txt && pip install -r ${LAMBDA_TASK_ROOT}/requirements.txt || echo "No local requirements"
+
+
 CMD [ "lambda.handler" ]
 ```
+
+This allows for a project wide `requirements.txt` for universal wide Python packages to be installed but also for a pipeline specific `requirements.txt`.
 
 ## Setup
 

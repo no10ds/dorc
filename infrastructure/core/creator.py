@@ -1,31 +1,50 @@
 import glob
 import os
 import re
-from checksumdir import dirhash
 
 import pulumi
-from pulumi import ResourceOptions
-import pulumi_docker as docker
+
 from pulumi_aws.lambda_ import Function
+from pulumi_aws.cognito import UserPoolClient
 from pydantic import ValidationError
 
 from infrastructure.core.event_bridge import (
     CreateEventBridgeRule,
     CreateEventBridgeTarget,
 )
+from infrastructure.core.rapid_client import CreateRapidClient, create_rapid_permissions
 from infrastructure.core._lambda import CreatePipelineLambdaFunction
 from infrastructure.core.state_machine import CreatePipelineStateMachine
-from infrastructure.core.models.definition import PipelineDefinition
+from infrastructure.core.models.definition import PipelineDefinition, rAPIdTrigger
+from infrastructure.core.validators import validate_rapid_trigger
+from infrastructure.providers.rapid_client import RapidClient
 from utils.abstracts import CreateInfrastructureBlock
-from utils.config import Config
+from utils.config import Config, LayerConfig
 from utils.constants import (
     LAMBDA_ROLE_ARN,
     LAMBDA_HANDLER_FILE,
     STATE_FUNCTION_ROLE_ARN,
     CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN,
 )
-from utils.exceptions import InvalidPipelineDefinitionException
+from utils.exceptions import (
+    InvalidPipelineDefinitionException,
+)
 from utils.filesystem import extract_lambda_name_from_filepath, path_to_name
+
+
+class FileStructure:
+    def __init__(self, lambda_paths: list[str]):
+        self.lambda_paths = lambda_paths
+        # TODO: This is probably better named as 'processing_layer' or something similar
+        self.layer = self.lambda_paths[0].split("/")[0]
+        self.pipeline_name = self.lambda_paths[0].split("/")[1]
+
+    def get_rapid_raw_target_from_layer(
+        self, rapid_layer_config: list[LayerConfig]
+    ) -> tuple[str, str]:
+        for rapid_layers in rapid_layer_config:
+            if rapid_layers.folder == self.layer:
+                return rapid_layers.source, rapid_layers.target
 
 
 class CreatePipeline(CreateInfrastructureBlock):
@@ -60,15 +79,17 @@ class CreatePipeline(CreateInfrastructureBlock):
         self.state_machine_role_arn = self.get_state_machine_role_arn()
         self.cloudevent_trigger_role_arn = self.get_cloudevent_trigger_role_arn()
 
-        self.pipeline_name = self.generate_pipeline_name_from_directory()
-
         self.created_lambdas = {}
+        self.file_structure = FileStructure(self.fetch_lambda_paths())
+
+        validate_rapid_trigger(self.pipeline_definition, self.config.rAPId_config)
 
         # Create infrastructure resource block creators
         self.cloudevent_bridge_rule = CreateEventBridgeRule(
             self.config,
             self.aws_provider,
             self.environment,
+            self.file_structure,
             self.pipeline_definition.trigger,
         )
 
@@ -83,14 +104,39 @@ class CreatePipeline(CreateInfrastructureBlock):
             CLOUDEVENT_STATE_MACHINE_TRIGGER_ROLE_ARN
         )
 
-    def fetch_source_directory_name(self):
-        top_dir = os.path.dirname(self.pipeline_definition.file_path)
-        return os.path.abspath(os.path.join(top_dir, self.config.source_code_folder))
+    def create_new_rapid_client_or_fetch_details(self) -> UserPoolClient | RapidClient:
+        trigger = self.pipeline_definition.trigger
+        client_key = trigger.client_key
+        rapid_client = CreateRapidClient(
+            self.config, self.aws_provider, self.environment, trigger
+        )
+        # If they have not supplied a rAPId client key via the trigger automatically
+        # create a new rAPId client
+        if client_key is None:
+            pipeline_name = self.file_structure.pipeline_name
+            layer = self.file_structure.layer
+            permissions = create_rapid_permissions(
+                self.config, self.pipeline_definition, layer
+            )
+            return rapid_client.apply(pipeline_name, layer, permissions).client
+
+        # Otherwise fetch an existing rAPId client details use their supplied client key
+        return rapid_client.fetch_secret().client
 
     def apply(self):
+        rapid_client_details = None
+        # If we have a rapid trigger we need to get the rapid client details
+        if self.pipeline_definition.trigger is not None and isinstance(
+            self.pipeline_definition.trigger, rAPIdTrigger
+        ):
+            rapid_client_details = self.create_new_rapid_client_or_fetch_details()
+
         lambda_paths = self.lambda_function_paths()
         lambda_paths.apply(
-            lambda names: [self.apply_lambda_function(name).apply() for name in names]
+            lambda names: [
+                self.apply_lambda_function(name, rapid_client_details).apply()
+                for name in names
+            ]
         ).apply(
             lambda outputs: {
                 output.name: output.lambda_function.arn for output in outputs
@@ -105,7 +151,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             else None
         )
 
-    def fetch_lambda_paths(self):
+    def fetch_lambda_paths(self) -> list[str]:
         initial = self.pipeline_definition.file_path.strip("__main__.py")
         path_to_search = os.path.join(initial, "*", LAMBDA_HANDLER_FILE)
         return [
@@ -115,10 +161,12 @@ class CreatePipeline(CreateInfrastructureBlock):
 
     def lambda_function_paths(self):
         return pulumi.Output.from_input(
-            [lambda_path for lambda_path in self.fetch_lambda_paths()]
+            [lambda_path for lambda_path in self.file_structure.lambda_paths]
         )
 
-    def apply_lambda_function(self, lambda_path: str) -> CreatePipelineLambdaFunction:
+    def apply_lambda_function(
+        self, lambda_path: str, rapid_client: UserPoolClient
+    ) -> CreatePipelineLambdaFunction:
         return CreatePipelineLambdaFunction(
             config=self.config,
             aws_provider=self.aws_provider,
@@ -127,6 +175,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             lambda_role=self.lambda_role_arn,
             function_name=extract_lambda_name_from_filepath(lambda_path),
             code_path=os.path.dirname(lambda_path),
+            rapid_client=rapid_client,
         )
 
     def apply_state_machine(self, lambdas: list[Function]):
@@ -134,7 +183,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.config,
             self.aws_provider,
             self.environment,
-            self.pipeline_name,
+            self.file_structure.pipeline_name,
             self.pipeline_definition,
             lambdas,
             self.state_machine_role_arn,
@@ -148,7 +197,7 @@ class CreatePipeline(CreateInfrastructureBlock):
             self.config,
             self.aws_provider,
             self.environment,
-            self.pipeline_name,
+            self.file_structure.pipeline_name,
             self.pipeline_definition,
             self.cloudevent_bridge_rule.outputs.cloudwatch_event_rule.name,
             self.cloudevent_trigger_role_arn,

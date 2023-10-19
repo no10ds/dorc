@@ -1,10 +1,39 @@
 import pytest
 import json
 
-from infrastructure.core.models.definition import (
-    S3Trigger,
-    CronTrigger,
-)
+from infrastructure.core.models.definition import S3Trigger, CronTrigger, rAPIdTrigger
+
+
+class TestRapidTrigger:
+    @pytest.fixture
+    def rapid_trigger(self) -> rAPIdTrigger:
+        return rAPIdTrigger(domain="domain", name="name")
+
+    @pytest.mark.usefixtures("rapid_trigger")
+    def test_create_s3_path_prefix(self, rapid_trigger: rAPIdTrigger):
+        s3_path_prefix = rapid_trigger.create_s3_path_prefix("raw")
+        assert s3_path_prefix == "data/raw/domain/name/"
+
+    @pytest.mark.usefixtures("rapid_trigger")
+    def test_event_pattern(self, rapid_trigger):
+        event_pattern = rapid_trigger.event_pattern("raw", "rapid-bucket")
+        assert event_pattern == json.dumps(
+            {
+                "source": ["aws.s3"],
+                "detail-type": ["Object Created"],
+                "detail": {
+                    "bucket": {"name": ["rapid-bucket"]},
+                    "object": {
+                        "key": [{"prefix": "data/raw/domain/name/"}],
+                    },
+                },
+            }
+        )
+
+    @pytest.mark.usefixtures("rapid_trigger")
+    def test_schedule_expression(self, rapid_trigger):
+        schedule_expression = rapid_trigger.schedule_expression()
+        assert schedule_expression is None
 
 
 class TestS3Trigger:
@@ -22,11 +51,10 @@ class TestS3Trigger:
         assert event_pattern == json.dumps(
             {
                 "source": ["aws.s3"],
+                "detail-type": ["Object Created"],
                 "detail": {
-                    "eventSource": ["s3.amazonaws.com"],
-                    "eventName": ["PutObject", "CompleteMultipartUpload"],
-                    "requestParameters": {
-                        "bucketName": ["test-bucket"],
+                    "bucket": {"name": ["test-bucket"]},
+                    "object": {
                         "key": [{"prefix": "test/prefix"}],
                     },
                 },

@@ -6,8 +6,13 @@ from infrastructure.core.event_bridge import (
     CreateEventBridgeRule,
     CreateEventBridgeTarget,
 )
-from infrastructure.core.models.definition import S3Trigger
+from infrastructure.core.models.definition import (
+    S3Trigger,
+    PipelineDefinition,
+    rAPIdTrigger,
+)
 from infrastructure.core.creator import CreatePipeline
+from utils.config import Config
 
 
 class TestCreateEventBridgeRule:
@@ -30,6 +35,7 @@ class TestCreateEventBridgeRule:
             pipeline_infrastructure_block.config,
             pipeline_infrastructure_block.aws_provider,
             pipeline_infrastructure_block.environment,
+            pipeline_infrastructure_block.file_structure,
             pipeline_infrastructure_block.pipeline_definition.trigger,
         )
         return event_bridge_rule_resource_block
@@ -39,6 +45,22 @@ class TestCreateEventBridgeRule:
         self, event_bridge_rule_resource_block, config
     ):
         assert event_bridge_rule_resource_block.project == config.project
+
+    @pytest.mark.usefixtures("pipeline_infrastructure_block")
+    def test_create_event_bridge_with_rapid_trigger(
+        self, pipeline_infrastructure_block: CreatePipeline
+    ):
+        pipeline_infrastructure_block.pipeline_definition.trigger = rAPIdTrigger(
+            domain="domain", name="name", client_key="client_key"
+        )
+        event_bridge_rule_resource_block = CreateEventBridgeRule(
+            pipeline_infrastructure_block.config,
+            pipeline_infrastructure_block.aws_provider,
+            pipeline_infrastructure_block.environment,
+            pipeline_infrastructure_block.file_structure,
+            pipeline_infrastructure_block.pipeline_definition.trigger,
+        )
+        assert event_bridge_rule_resource_block.is_rapid_trigger is True
 
     @pytest.mark.usefixtures("event_bridge_rule_resource_block")
     @pulumi.runtime.test
@@ -71,13 +93,10 @@ class TestCreateEventBridgeRule:
             assert event_pattern == json.dumps(
                 {
                     "source": ["aws.s3"],
+                    "detail-type": ["Object Created"],
                     "detail": {
-                        "eventSource": ["s3.amazonaws.com"],
-                        "eventName": ["PutObject", "CompleteMultipartUpload"],
-                        "requestParameters": {
-                            "bucketName": ["test-bucket"],
-                            "key": [{"prefix": "test-key"}],
-                        },
+                        "bucket": {"name": ["test-bucket"]},
+                        "object": {"key": [{"prefix": "test-key"}]},
                     },
                 }
             )

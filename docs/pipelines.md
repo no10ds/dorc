@@ -17,6 +17,7 @@ Say we have a data source, the census, that we can pull in raw from an api and w
                 __main__.py
                 Pulumi.prod.yaml
                 Pulumi.preprod.yaml
+                requirements.txt
             /processed
                 /src
                     /function1
@@ -26,6 +27,7 @@ Say we have a data source, the census, that we can pull in raw from an api and w
                 __main__.py
                 Pulumi.prod.yaml
                 Pulumi.preprod.yaml
+                requirements.txt
 ```
 
 We can see we define a new pipeline called census under the `src` folder. Next we define our two layers, raw and processed. Our raw pipeline will simply pull the census from the api and save into a temporary holding store. The second layer is our processed pipeline which will take the raw from this holding store, perform our aggreations and transformations to get the data into a valid state for our model.

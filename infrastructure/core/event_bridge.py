@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import pulumi_aws as aws
 
 from pulumi import ResourceOptions
@@ -7,10 +9,14 @@ from pulumi_aws.cloudwatch import EventRule, EventTarget
 from infrastructure.core.models.definition import (
     CronTrigger,
     S3Trigger,
+    rAPIdTrigger,
     PipelineDefinition,
 )
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
+
+if TYPE_CHECKING:
+    from infrastructure.core.creator import FileStructure
 
 
 class CreateEventBridgeRule(CreateResourceBlock):
@@ -22,18 +28,33 @@ class CreateEventBridgeRule(CreateResourceBlock):
         config: Config,
         aws_provider: Provider,
         environment: str,
-        trigger: S3Trigger | CronTrigger,
+        file_structure: "FileStructure",
+        trigger: S3Trigger | CronTrigger | rAPIdTrigger,
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.trigger = trigger
         self.project = self.config.project
+        self.file_structure = file_structure
+        self.is_rapid_trigger = isinstance(trigger, rAPIdTrigger)
+
+    def create_event_pattern(self):
+        if self.is_rapid_trigger:
+            data_bucket_name = self.config.rAPId_config.data_bucket_name
+            # Create the S3 event pattern to match the data events from the relevant
+            # rAPId data path
+            rapid_raw_layer, _ = self.file_structure.get_rapid_raw_target_from_layer(
+                self.config.universal.rapid_layer_config
+            )
+            return self.trigger.event_pattern(rapid_raw_layer, data_bucket_name)
+
+        return self.trigger.event_pattern()
 
     def apply(self) -> Output:
         name = f"{self.project}-{self.environment}-{self.trigger.name}"
         cloudwatch_event_rule = aws.cloudwatch.EventRule(
             resource_name=name,
             name=name,
-            event_pattern=self.trigger.event_pattern(),
+            event_pattern=self.create_event_pattern(),
             schedule_expression=self.trigger.schedule_expression(),
             opts=ResourceOptions(provider=self.aws_provider),
         )

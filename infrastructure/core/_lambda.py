@@ -1,14 +1,18 @@
-from checksumdir import dirhash
 import os
 
-from pulumi import ResourceOptions, StackReference
-import pulumi_docker as docker
+import pulumi
 import pulumi_aws as aws
+import pulumi_docker as docker
+
+from checksumdir import dirhash
 from pulumi_aws.lambda_ import Function
+from pulumi_aws.cognito import UserPoolClient
+from pulumi import ResourceOptions, StackReference
 
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
 from infrastructure.universal.ecr import CreateEcrResource
+from infrastructure.providers.rapid_client import RapidClient
 
 
 class CreatePipelineLambdaFunction(CreateResourceBlock):
@@ -25,6 +29,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
         lambda_role,
         function_name: str,
         code_path: str,
+        rapid_client: UserPoolClient | RapidClient | None,
     ) -> None:
         super().__init__(config, aws_provider, environment)
         self.project = self.config.project
@@ -32,6 +37,7 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
         self.lambda_role = lambda_role
         self.function_name = function_name
         self.code_path = code_path
+        self.rapid_client = rapid_client
 
     def authenticate_to_ecr_repo(self) -> aws.ecr.GetAuthorizationTokenResult:
         ecr_repo_id_output = self.universal_stack_reference.require_output(
@@ -109,15 +115,28 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
             name=name,
             role=self.lambda_role,
             runtime=None,
-            handler="lambda.handler",
+            timeout=600,
             package_type="Image",
             image_uri=image.base_image_name,
             vpc_config=aws.lambda_.FunctionVpcConfigArgs(
                 security_group_ids=[security_group.id],
                 subnet_ids=self.config.private_subnet_ids,
             ),
+            environment={
+                "variables": {**self.create_rapid_environment_variables()},
+            },
             opts=ResourceOptions(provider=self.aws_provider),
         )
+
+    def create_rapid_environment_variables(self) -> dict:
+        if self.rapid_client is None:
+            return {}
+        else:
+            return {
+                "RAPID_CLIENT_ID": self.rapid_client.id,
+                "RAPID_CLIENT_SECRET": self.rapid_client.client_secret,
+                "RAPID_URL": self.config.rAPId_config.url,
+            }
 
     def export(self):
         pass
