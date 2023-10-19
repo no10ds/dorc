@@ -6,7 +6,7 @@
 
 # Help
 
-Please see the [docs page]() for further reference.
+Please see the [docs page](https://dorc.readthedocs.io/en/latest/) for further reference.
 
 
 # Contributing
