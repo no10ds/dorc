@@ -37,7 +37,7 @@ Typically once a project is setup you would expect the bulk of the code changes 
 
 ### Environments
 
-Just like any standard software we recommend running your project in multiple environments. *dorc* allows for all of your data orchestration to be replicated across different environments of your choosing.
+Just like any standard software we recommend running your project in multiple environments (e.g. dev, staging, prod). *dorc* allows for all of your data orchestration to be replicated across different environments of your choosing.
 
 The only deployment in *dorc* that is environment agnostic is the universal infrastructure.
 
