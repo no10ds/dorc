@@ -1,4 +1,4 @@
-from pulumi import Output
+from pulumi import ResourceOptions
 from pulumi_aws import Provider
 from pulumi_aws.cognito import UserPoolClient
 
@@ -48,6 +48,7 @@ class CreateRapidClient(CreateResourceBlock):
             resource_name=f"{self.project}-{self.environment}-{id}",
             id=id,
             user_pool_id=self.config.rAPId_config.user_pool_id,
+            opts=ResourceOptions(provider=self.aws_provider),
         )
 
     def export(self):
