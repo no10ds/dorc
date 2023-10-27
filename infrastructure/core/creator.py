@@ -4,6 +4,7 @@ import re
 
 import pulumi
 
+from pulumi import ResourceOptions
 from pulumi_aws.lambda_ import Function
 from pulumi_aws.cognito import UserPoolClient
 from pydantic import ValidationError
@@ -68,8 +69,12 @@ class CreatePipeline(CreateInfrastructureBlock):
             f"{os.getenv('INFRA_STACK_NAME', 'infra')}-{self.environment}"
         )
 
-        self.universal_stack_reference = pulumi.StackReference(universal_stack_name)
-        self.infra_stack_reference = pulumi.StackReference(infra_stack_name)
+        self.universal_stack_reference = pulumi.StackReference(
+            universal_stack_name, opts=ResourceOptions(provider=self.aws_provider)
+        )
+        self.infra_stack_reference = pulumi.StackReference(
+            infra_stack_name, opts=ResourceOptions(provider=self.aws_provider)
+        )
 
         self.lambda_role_arn = self.infra_stack_reference.require_output(
             LAMBDA_ROLE_ARN
