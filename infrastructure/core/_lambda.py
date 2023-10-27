@@ -7,7 +7,7 @@ import pulumi_docker as docker
 from checksumdir import dirhash
 from pulumi_aws.lambda_ import Function
 from pulumi_aws.cognito import UserPoolClient
-from pulumi import ResourceOptions, StackReference
+from pulumi import ResourceOptions, StackReference, InvokeOptions
 
 from utils.abstracts import CreateResourceBlock
 from utils.config import Config
@@ -44,7 +44,9 @@ class CreatePipelineLambdaFunction(CreateResourceBlock):
             CreateEcrResource.create_repository_id_export_key(self.function_name)
         )
         return ecr_repo_id_output.apply(
-            lambda id: aws.ecr.get_authorization_token(registry_id=id)
+            lambda id: aws.ecr.get_authorization_token(
+                registry_id=id, opts=InvokeOptions(provider=self.aws_provider)
+            )
         )
 
     def apply(self) -> Output:
