@@ -40,6 +40,7 @@ class CreateRapidClient(CreateResourceBlock):
                 rapid_url=self.config.rAPId_config.url,
                 client_name=client_name,
                 permissions=permissions,
+                opts=ResourceOptions(provider=self.aws_provider),
             )
         )
 
